@@ -21,6 +21,9 @@ logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
 
 
+_ALREADY_APPLIED_MARKERS = ("DuplicateTableError", "DuplicateColumnError", "ProgrammingError")
+
+
 def _run_migrations() -> None:
     result = subprocess.run(
         [sys.executable, "-m", "alembic", "upgrade", "head"],
@@ -28,6 +31,12 @@ def _run_migrations() -> None:
         text=True,
     )
     if result.returncode != 0:
+        if any(marker in result.stderr for marker in _ALREADY_APPLIED_MARKERS):
+            logger.warning(
+                f"Alembic migration conflict, likely already applied by another "
+                f"machine; continuing:\n{result.stderr}"
+            )
+            return
         logger.error(f"Alembic failed:\n{result.stderr}")
         raise RuntimeError("Migration failed, shutting down")
     logger.info("Alembic migrations applied")

@@ -38,8 +38,9 @@ def upgrade() -> None:
             server_default=sa.func.now(),
             nullable=False,
         ),
+        if_not_exists=True,
     )
-    op.create_index("ix_receipts_user_id", "receipts", ["user_id"])
+    op.create_index("ix_receipts_user_id", "receipts", ["user_id"], if_not_exists=True)
 
     op.create_table(
         "items",
@@ -55,6 +56,7 @@ def upgrade() -> None:
         sa.Column("unit_price", sa.Numeric(12, 2), nullable=True),
         sa.Column("total_price", sa.Numeric(12, 2), nullable=False),
         sa.Column("category", category_enum, nullable=False),
+        if_not_exists=True,
     )
 
     op.create_table(
@@ -64,8 +66,9 @@ def upgrade() -> None:
         sa.Column("category", category_enum, nullable=False),
         sa.Column("limit_pln", sa.Numeric(12, 2), nullable=False),
         sa.Column("month", sa.String(7), nullable=False),
+        if_not_exists=True,
     )
-    op.create_index("ix_budgets_user_id", "budgets", ["user_id"])
+    op.create_index("ix_budgets_user_id", "budgets", ["user_id"], if_not_exists=True)
 
 
 def downgrade() -> None:

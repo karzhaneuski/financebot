@@ -17,7 +17,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     op.add_column("items", sa.Column("normalized_name", sa.String(255), nullable=True))
-    op.create_index("ix_items_normalized_name", "items", ["normalized_name"])
+    op.create_index("ix_items_normalized_name", "items", ["normalized_name"], if_not_exists=True)
 
 
 def downgrade() -> None:
