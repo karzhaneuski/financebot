@@ -40,7 +40,7 @@ def upgrade() -> None:
         ),
         if_not_exists=True,
     )
-    op.create_index("ix_receipts_user_id", "receipts", ["user_id"], if_not_exists=True)
+    op.execute("CREATE INDEX IF NOT EXISTS ix_receipts_user_id ON receipts (user_id)")
 
     op.create_table(
         "items",
@@ -68,7 +68,7 @@ def upgrade() -> None:
         sa.Column("month", sa.String(7), nullable=False),
         if_not_exists=True,
     )
-    op.create_index("ix_budgets_user_id", "budgets", ["user_id"], if_not_exists=True)
+    op.execute("CREATE INDEX IF NOT EXISTS ix_budgets_user_id ON budgets (user_id)")
 
 
 def downgrade() -> None:

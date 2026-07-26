@@ -27,8 +27,8 @@ def upgrade() -> None:
         sa.UniqueConstraint("user_id"),
         if_not_exists=True,
     )
-    op.create_index(
-        "ix_report_settings_user_id", "report_settings", ["user_id"], if_not_exists=True
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_report_settings_user_id ON report_settings (user_id)"
     )
 
 
