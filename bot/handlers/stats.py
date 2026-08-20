@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import datetime, timedelta
 
 from aiogram import F, Router
 from aiogram.filters import Command
@@ -27,7 +28,7 @@ from bot.keyboards.inline import (
 from bot.services.charts import build_bar_chart, build_pie_chart, build_trend_chart
 from bot.services.comparison import build_comparison_report
 from bot.services.stats import format_stats_message, get_period_stats
-from bot.utils.formatters import format_date
+from bot.utils.formatters import currency_flag, format_date
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -126,6 +127,27 @@ def _build_product_detail_text(
     return "\n".join(lines)
 
 
+async def _append_currency_breakdown(text: str, session: AsyncSession, user_id: int, days: int) -> str:
+    """Append a per-currency breakdown block if 2+ currencies appear in the period."""
+    date_to = datetime.utcnow().date()
+    date_from = date_to - timedelta(days=days)
+    rows = await crud.get_spending_by_currency(session, user_id, date_from, date_to)
+    if len(rows) < 2:
+        return text
+
+    lines = [text, "", "💱 *По валютам:*"]
+    for r in rows:
+        ccy = r["currency"]
+        flag = currency_flag(ccy)
+        original = f"{r['total_original']:,.2f}".replace(",", " ")
+        if ccy == "PLN":
+            lines.append(f"{flag} PLN — {original} (родная)")
+        else:
+            pln = f"{r['total_pln']:,.2f}".replace(",", " ")
+            lines.append(f"{flag} {ccy} — {original} (≈{pln} PLN)")
+    return "\n".join(lines)
+
+
 # ── /stats entry point ────────────────────────────────────────────────────────
 
 @router.message(Command("stats"))
@@ -167,6 +189,7 @@ async def speriod_callback(
             await call.message.edit_text(f"За период «{label}» трат не найдено 🙂")
             return
         text = await format_stats_message(stats, label)
+        text = await _append_currency_breakdown(text, session, call.from_user.id, days)
         await call.message.edit_text(text, parse_mode="Markdown")
         if stats["by_category"]:
             chart = await build_pie_chart(stats["by_category"], f"Расходы — {label}")
@@ -481,6 +504,7 @@ async def stats_callback(call: CallbackQuery, session: AsyncSession) -> None:
         await call.message.edit_text("За этот период трат не найдено 🙂")
         return
     text = await format_stats_message(stats, label)
+    text = await _append_currency_breakdown(text, session, call.from_user.id, days)
     await call.message.edit_text(text, parse_mode="Markdown")
     if stats["by_category"]:
         chart = await build_pie_chart(stats["by_category"], f"Расходы за {label}")

@@ -11,20 +11,28 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import redis.asyncio as aioredis
 
 from bot.db.crud import (
-    create_erste_transactions,
+    create_bank_transactions,
     create_receipt,
     get_receipt_by_id,
     update_receipt_category,
     update_receipt_store,
 )
 from bot.db.models import Category
-from bot.keyboards.inline import CATEGORY_LABEL, erste_save_keyboard, recat_categories_keyboard, recat_keyboard
+from bot.keyboards.inline import (
+    CATEGORY_LABEL,
+    erste_save_keyboard,
+    recat_categories_keyboard,
+    recat_keyboard,
+    revolut_save_keyboard,
+)
 from bot.parsers.erste import categorize, is_erste_bank_statement, parse_erste_pdf
+from bot.parsers.revolut import is_revolut_statement, parse_revolut_csv
 from bot.services import budget as budget_service
 from bot.services.currency import convert_to_pln
 from bot.services.normalization import normalize_item_names
 from bot.services.vision import parse_bank_transaction_screenshot, parse_receipt
 from bot.utils.formatters import (
+    currency_flag,
     format_currency,
     format_date_ru,
     format_items_list,
@@ -35,6 +43,7 @@ logger = logging.getLogger(__name__)
 router = Router()
 
 _ERSTE_KEY_TTL = 600  # 10 minutes
+_REVOLUT_KEY_TTL = 600  # 10 minutes
 
 
 def _pdf_first_page_to_jpeg(pdf_bytes: bytes) -> bytes:
@@ -51,6 +60,10 @@ class ForeignMerchantStates(StatesGroup):
 
 def _erste_redis_key(user_id: int) -> str:
     return f"erste_pending:{user_id}"
+
+
+def _revolut_redis_key(user_id: int) -> str:
+    return f"revolut_pending:{user_id}"
 
 
 @router.message(F.photo)
@@ -172,7 +185,14 @@ async def handle_receipt_photo(message: Message, bot: Bot, session: AsyncSession
 @router.message(F.document)
 async def handle_document(message: Message, bot: Bot, session: AsyncSession, redis: aioredis.Redis) -> None:
     doc = message.document
-    if not doc.mime_type == "application/pdf":
+    mime = doc.mime_type or ""
+    filename = (doc.file_name or "").lower()
+    is_pdf = mime == "application/pdf" or filename.endswith(".pdf")
+    is_csv = (
+        mime in ("text/csv", "text/comma-separated-values", "application/vnd.ms-excel")
+        or filename.endswith(".csv")
+    )
+    if not (is_pdf or is_csv):
         return
 
     status_msg = await message.answer("⏳ Загружаю файл...")
@@ -180,12 +200,17 @@ async def handle_document(message: Message, bot: Bot, session: AsyncSession, red
     try:
         buf = io.BytesIO()
         await bot.download(doc, destination=buf)
-        pdf_bytes = buf.getvalue()
+        file_bytes = buf.getvalue()
     except Exception as e:
         logger.error(f"Failed to download document: {e}", exc_info=True)
         await status_msg.edit_text("❌ Не удалось загрузить файл. Попробуй ещё раз.")
         return
 
+    if is_csv:
+        await _handle_revolut_csv(message, status_msg, file_bytes, redis)
+        return
+
+    pdf_bytes = file_bytes
     if not is_erste_bank_statement(pdf_bytes):
         await _handle_pdf_receipt(message, status_msg, pdf_bytes, session, redis, bot)
         return
@@ -235,6 +260,131 @@ async def handle_document(message: Message, bot: Bot, session: AsyncSession, red
         parse_mode="Markdown",
         reply_markup=erste_save_keyboard(),
     )
+
+
+async def _handle_revolut_csv(
+    message: Message,
+    status_msg: Message,
+    file_bytes: bytes,
+    redis: aioredis.Redis,
+) -> None:
+    """Parse a Revolut consolidated statement CSV and stage it for confirmation."""
+    text = file_bytes.decode("utf-8-sig", errors="ignore")
+    if not is_revolut_statement(text):
+        await status_msg.edit_text(
+            "❌ Не удалось распознать файл. Поддерживаются выписки Erste Bank Polska (PDF) "
+            "и сводные данные Revolut (CSV)."
+        )
+        return
+
+    await status_msg.edit_text("⏳ Парсю выписку Revolut...")
+
+    try:
+        transactions = parse_revolut_csv(file_bytes)
+    except Exception as e:
+        logger.error(f"Revolut CSV parse error: {e}", exc_info=True)
+        await status_msg.edit_text("❌ Не удалось разобрать файл. Попробуй другой экспорт.")
+        return
+
+    if not transactions:
+        await status_msg.edit_text("⚠️ Транзакции не найдены. Возможно, формат экспорта изменился.")
+        return
+
+    total_pln = sum(t["total_pln"] for t in transactions)
+    by_currency: dict[str, int] = {}
+    for t in transactions:
+        by_currency[t["currency"]] = by_currency.get(t["currency"], 0) + 1
+
+    await redis.set(
+        _revolut_redis_key(message.from_user.id),
+        json.dumps(transactions, ensure_ascii=False),
+        ex=_REVOLUT_KEY_TTL,
+    )
+
+    lines = [
+        "💳 *Revolut — сводная выписка распознана*\n",
+        f"📊 Покупок найдено: *{len(transactions)}*",
+        f"💰 Итого: *{total_pln:,.2f} PLN*".replace(",", " "),
+        "",
+        "*По валютам:* " + ", ".join(
+            f"{currency_flag(c)} {c} ({n})" for c, n in sorted(by_currency.items())
+        ),
+    ]
+
+    recent = transactions[-5:]
+    if recent:
+        lines.append("\n*Последние покупки:*")
+        for t in recent:
+            lines.append(f"  {t['date']}  {t['category_display']}  -{t['amount']:.2f} {t['currency']}")
+            lines.append(f"  _{t['description'][:60]}_")
+
+    lines.append("\nНажми кнопку, чтобы сохранить все транзакции в базу данных:")
+
+    await status_msg.edit_text(
+        "\n".join(lines),
+        parse_mode="Markdown",
+        reply_markup=revolut_save_keyboard(),
+    )
+
+
+@router.callback_query(F.data == "revolut:save")
+async def revolut_save_callback(
+    call: CallbackQuery,
+    bot: Bot,
+    session: AsyncSession,
+    redis: aioredis.Redis,
+) -> None:
+    await call.answer()
+
+    raw = await redis.get(_revolut_redis_key(call.from_user.id))
+    if not raw:
+        await call.message.edit_text("❌ Данные истекли. Загрузи выписку ещё раз.")
+        return
+
+    try:
+        transactions = json.loads(raw)
+    except Exception:
+        await call.message.edit_text("❌ Ошибка чтения данных. Загрузи выписку ещё раз.")
+        return
+
+    await call.message.edit_text("⏳ Сохраняю транзакции...")
+
+    try:
+        count, _pending, duplicates = await create_bank_transactions(
+            session, call.from_user.id, transactions, source="revolut"
+        )
+        await session.commit()
+    except Exception as e:
+        logger.error(f"Failed to save Revolut transactions: {e}", exc_info=True)
+        await call.message.edit_text("❌ Ошибка при сохранении. Попробуй позже.")
+        return
+
+    await redis.delete(_revolut_redis_key(call.from_user.id))
+
+    total_pln = sum(t["total_pln"] for t in transactions)
+    await call.message.edit_text(
+        f"✅ *Сохранено {count} транзакций!*\n\n"
+        f"💸 Расходы: {total_pln:,.2f} PLN\n\n".replace(",", " ") +
+        "Используй /stats для просмотра статистики.",
+        parse_mode="Markdown",
+    )
+
+    if duplicates:
+        lines = [f"⚠️ Найдено {len(duplicates)} возможных дублей — эти транзакции уже были добавлены вручную:\n"]
+        for d in duplicates:
+            date_str = format_date_ru(d["date"]) if d.get("date") else "?"
+            lines.append(f"  — {d['description']} — {d['amount']:.2f} — {date_str}")
+        lines.append("\nОни не были добавлены повторно.")
+        await call.message.answer("\n".join(lines))
+
+    await budget_service.check_and_notify_budgets(session, call.from_user.id, bot)
+
+
+@router.callback_query(F.data == "revolut:cancel")
+async def revolut_cancel_callback(call: CallbackQuery, redis: aioredis.Redis) -> None:
+    await call.answer()
+    await redis.delete(_revolut_redis_key(call.from_user.id))
+    await call.message.edit_text("❌ Сохранение отменено.")
 
 
 async def _handle_pdf_receipt(
@@ -339,7 +489,9 @@ async def erste_save_callback(
     await call.message.edit_text("⏳ Сохраняю транзакции...")
 
     try:
-        count, pending_merchants, duplicates = await create_erste_transactions(session, call.from_user.id, transactions)
+        count, pending_merchants, duplicates = await create_bank_transactions(
+            session, call.from_user.id, transactions, source="erste"
+        )
         await session.commit()
     except Exception as e:
         logger.error(f"Failed to save Erste transactions: {e}", exc_info=True)

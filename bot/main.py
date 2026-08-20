@@ -75,7 +75,7 @@ async def main() -> None:
             pass
         return True
 
-    scheduler = setup_scheduler(bot)
+    scheduler = setup_scheduler(bot, redis)
     scheduler.start()
 
     api_server = uvicorn.Server(

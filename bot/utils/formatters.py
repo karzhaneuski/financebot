@@ -22,6 +22,18 @@ CURRENCY_SYMBOLS = {
     "USD": "$",
     "CZK": "Kč",
     "BYR": "Br",
+    "BYN": "Br",
+}
+
+CURRENCY_FLAGS = {
+    "PLN": "🇵🇱",
+    "USD": "🇺🇸",
+    "EUR": "🇪🇺",
+    "CZK": "🇨🇿",
+    "BYN": "🇧🇾",
+    "TRY": "🇹🇷",
+    "JPY": "🇯🇵",
+    "GBP": "🇬🇧",
 }
 
 MONTHS_GENITIVE = [
@@ -48,6 +60,10 @@ def format_date_ru(date_str: str | None) -> str:
 def format_currency(amount: float, currency: str) -> str:
     symbol = CURRENCY_SYMBOLS.get(currency, currency)
     return f"{amount:.2f} {symbol}"
+
+
+def currency_flag(currency: str) -> str:
+    return CURRENCY_FLAGS.get(currency, "💱")
 
 
 def format_items_list(items: list[dict]) -> str:

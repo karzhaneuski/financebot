@@ -230,6 +230,14 @@ def erste_save_keyboard() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
+def revolut_save_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="✅ Записать все транзакции", callback_data="revolut:save")
+    builder.button(text="❌ Отменить", callback_data="revolut:cancel")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
 def export_type_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(

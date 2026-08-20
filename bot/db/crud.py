@@ -144,12 +144,19 @@ async def update_receipt_store(session: AsyncSession, receipt_id: int, store: st
         receipt.store = store[:255]
 
 
-async def create_erste_transactions(
+async def create_bank_transactions(
     session: AsyncSession,
     user_id: int,
     transactions: list[dict],
+    source: str,
 ) -> tuple[int, list[dict], list[dict]]:
-    """Bulk-save Erste Bank transactions.
+    """Bulk-save bank-statement transactions (Erste PDF, Revolut CSV, ...).
+
+    Each tx dict: date (YYYY-MM-DD), amount (native currency, unsigned),
+    currency (defaults to PLN — Erste statements are PLN-only), total_pln
+    (defaults to amount — same reason), description, category, type
+    (expense/income/cash_withdrawal), plus the Erste-specific
+    foreign_card_no_merchant/orig_amount/orig_currency fields.
 
     Returns (count_saved, pending_merchant_list, duplicates) where:
     - pending_merchant_list: foreign-card transactions that still need a merchant name
@@ -159,11 +166,39 @@ async def create_erste_transactions(
     pending_merchants: list[dict] = []
     duplicates: list[dict] = []
 
+    # Snapshot already-persisted receipts for the batch's date range ONCE,
+    # before any inserts. Dup checks below only ever match against this
+    # frozen snapshot — never re-queried mid-loop — so two genuinely
+    # identical rows within the same import (e.g. two same-day metro
+    # top-ups) both save. Re-querying the DB per row would pick up this
+    # batch's own not-yet-committed inserts too (session.flush() makes them
+    # visible to subsequent SELECTs in the same transaction) and silently
+    # collapse legitimate repeats into one.
+    batch_dates: set[date] = set()
+    for tx in transactions:
+        if tx.get("date"):
+            try:
+                batch_dates.add(datetime.strptime(tx["date"], "%Y-%m-%d").date())
+            except ValueError:
+                pass
+
+    existing: list[Receipt] = []
+    if batch_dates:
+        existing_stmt = select(Receipt).where(
+            Receipt.user_id == user_id,
+            Receipt.date.in_(batch_dates),
+        )
+        existing = list((await session.execute(existing_stmt)).scalars().all())
+    exact_keys = {(r.date, r.currency, float(r.total)) for r in existing}
+
     for tx in transactions:
         tx_type = tx.get("type", "expense")
         if tx_type == "income":
             continue
-        if "revolut" in tx.get("description", "").lower():
+        # Erste-only: a "transfer to Revolut" line in the PLN account would
+        # double-count once the same spend is also imported from a Revolut
+        # statement, so skip it there. Doesn't apply to Revolut's own export.
+        if source == "erste" and "revolut" in tx.get("description", "").lower():
             continue
 
         try:
@@ -172,6 +207,8 @@ async def create_erste_transactions(
             date_obj = None
 
         amount = abs(float(tx.get("amount", 0)))
+        currency = tx.get("currency") or "PLN"
+        total_pln = abs(float(tx.get("total_pln", amount)))
         description = tx.get("description", "")[:255]
         category_str = tx.get("category", "other")
         try:
@@ -179,26 +216,25 @@ async def create_erste_transactions(
         except ValueError:
             category = Category.other
 
-        dup_stmt = select(Receipt.id).where(
-            Receipt.user_id == user_id,
-            Receipt.date == date_obj,
-            Receipt.total == amount,
-        )
-        dup = (await session.execute(dup_stmt)).first()
-        if dup:
+        if date_obj is not None and (date_obj, currency, amount) in exact_keys:
             continue
 
         # Soft-dup check: warn if a screenshot/manual receipt already covers this transaction.
-        # Match on same date + amount within 0.01 + store name shares the first significant word.
+        # Match on same date + PLN amount within 0.01 (currency-agnostic) + store
+        # name shares the first significant word. Checked against the same frozen
+        # `existing` snapshot as above, for the same reason.
         first_word = description.split()[0] if description else ""
-        if len(first_word) > 2:
-            soft_dup_stmt = select(Receipt.id).where(
-                Receipt.user_id == user_id,
-                Receipt.date == date_obj,
-                func.abs(Receipt.total - amount) < 0.01,
-                Receipt.store.ilike(f"%{first_word}%"),
+        if date_obj is not None and len(first_word) > 2:
+            soft_dup = next(
+                (
+                    r for r in existing
+                    if r.date == date_obj
+                    and r.store
+                    and first_word.lower() in r.store.lower()
+                    and abs(float(r.total_pln) - total_pln) < 0.01
+                ),
+                None,
             )
-            soft_dup = (await session.execute(soft_dup_stmt)).first()
             if soft_dup:
                 duplicates.append({
                     "description": description,
@@ -214,9 +250,10 @@ async def create_erste_transactions(
             user_id=user_id,
             store=store,
             date=date_obj,
-            currency="PLN",
+            currency=currency,
             total=amount,
-            total_pln=amount,
+            total_pln=total_pln,
+            source=source,
             tx_type=tx_type if tx_type == "cash_withdrawal" else "purchase",
         )
         session.add(receipt)
@@ -226,8 +263,8 @@ async def create_erste_transactions(
             receipt_id=receipt.id,
             name=description or "Оплата картой за рубежом",
             quantity=1,
-            unit_price=amount,
-            total_price=amount,
+            unit_price=total_pln,
+            total_price=total_pln,
             category=category,
         )
         session.add(item)
@@ -238,7 +275,7 @@ async def create_erste_transactions(
                 "receipt_id": receipt.id,
                 "orig_amount": tx.get("orig_amount"),
                 "orig_currency": tx.get("orig_currency"),
-                "amount_pln": amount,
+                "amount_pln": total_pln,
             })
 
     return count, pending_merchants, duplicates
@@ -600,6 +637,37 @@ async def get_total_spending_range(
     total = float(row[0]) if row[0] is not None else 0.0
     count = int(row[1]) if row[1] is not None else 0
     return total, count
+
+
+async def get_spending_by_currency(
+    session: AsyncSession, user_id: int, date_from: date, date_to: date
+) -> list[dict[str, Any]]:
+    stmt = (
+        select(
+            Receipt.currency,
+            func.sum(Receipt.total).label("total_original"),
+            func.sum(Receipt.total_pln).label("total_pln"),
+            func.count(Receipt.id).label("count"),
+        )
+        .where(
+            Receipt.user_id == user_id,
+            Receipt.date >= date_from,
+            Receipt.date <= date_to,
+            (Receipt.tx_type != "income") | Receipt.tx_type.is_(None),
+        )
+        .group_by(Receipt.currency)
+        .order_by(func.sum(Receipt.total_pln).desc())
+    )
+    result = await session.execute(stmt)
+    return [
+        {
+            "currency": row.currency,
+            "total_original": float(row.total_original),
+            "total_pln": float(row.total_pln),
+            "count": row.count,
+        }
+        for row in result
+    ]
 
 
 async def get_report_settings(session: AsyncSession, user_id: int) -> ReportSettings:

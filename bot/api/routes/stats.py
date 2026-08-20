@@ -71,6 +71,27 @@ async def stats_by_category(
     return {"categories": categories}
 
 
+@router.get("/by-currency")
+async def stats_by_currency(
+    period: str = Query("month"),
+    user_id: int = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    date_from, date_to = _period_range(period)
+    rows = await crud.get_spending_by_currency(db, user_id, date_from, date_to)
+
+    currencies = [
+        {
+            "currency": r["currency"],
+            "total_original": round(r["total_original"], 2),
+            "total_pln": round(r["total_pln"], 2),
+            "count": r["count"],
+        }
+        for r in rows
+    ]
+    return {"currencies": currencies}
+
+
 @router.get("/by-day")
 async def stats_by_day(
     period: str = Query("month"),

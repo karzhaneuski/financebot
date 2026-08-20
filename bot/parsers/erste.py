@@ -3,6 +3,8 @@ import logging
 
 import fitz  # pymupdf
 
+from bot.services.categorization import categorize
+
 logger = logging.getLogger(__name__)
 
 OP_TYPES = [
@@ -14,19 +16,6 @@ OP_TYPES = [
 ]
 
 CASH_WITHDRAWAL_KEYWORDS = ["СНЯТИЕ НАЛИЧНЫХ", "WYPŁATA GOTÓWKI", "BANKOMAT", "ATM"]
-
-# (keywords_upper, db_category_enum_value, display_name_ru)
-CATEGORY_MAP = [
-    (["KAUFLAND", "LIDL", "BIEDRONKA", "AUCHAN"], "groceries", "Продукты"),
-    (["KEBAB", "MCDONALDS", "KFC", "DOMINOS", "WOLT", "PYSZNE"], "cafe", "Еда вне дома"),
-    (["KOLEO", "FLIXBUS", "JAKDOJADE"], "transport", "Транспорт"),
-    (["SPOTIFY", "YOUTUBE", "APPLE.COM", "CLAUDE.AI", "OPENAI"], "other", "Подписки"),
-    (["REVOLUT"], "other", "Перевод на Revolut"),
-    (["STYPENDIA", "STYPENDIUM"], "other", "Стипендия"),
-    (["AKADEMIK", "АКАДЕМИК", "CZYNSZ", "NAJEM", "WYNAJEM"], "housing", "Жильё"),
-    (["POLITECHNIKA"], "household", "Общежитие"),
-    (["AMAZON", "ZALANDO", "OLX", "TEMU"], "other", "Онлайн шопинг"),
-]
 
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 # Matches amounts like "-18,00", "2 000,00", "-2 000,00" optionally followed by PLN
@@ -52,15 +41,6 @@ _FOREIGN_CARD_NO_MERCHANT_RE = re.compile(
 )
 # Matches Tytuł values that are pure transfer labels with no merchant context
 _PRZELEW_ONLY_RE = re.compile(r"^przelew(?: na telefon)?$", re.IGNORECASE)
-
-
-def categorize(description: str) -> tuple[str, str]:
-    """Return (db_category, display_category_ru) for a transaction description."""
-    upper = description.upper()
-    for keywords, db_cat, display_cat in CATEGORY_MAP:
-        if any(kw in upper for kw in keywords):
-            return db_cat, display_cat
-    return "other", "Другое"
 
 
 def is_erste_bank_statement(pdf_bytes: bytes) -> bool:
