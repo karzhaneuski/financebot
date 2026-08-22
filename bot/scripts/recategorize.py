@@ -22,7 +22,7 @@ from sqlalchemy.orm import selectinload
 
 from bot.db.engine import AsyncSessionLocal, engine
 from bot.db.models import Category, Item, Receipt
-from bot.parsers.erste import categorize
+from bot.services.categorization import categorize
 
 TARGET_CATEGORIES = {Category.other, Category.household, Category.housing}
 

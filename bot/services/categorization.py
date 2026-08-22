@@ -1,9 +1,26 @@
 # (keywords_upper, db_category_enum_value, display_name_ru)
 CATEGORY_MAP = [
-    (["KAUFLAND", "LIDL", "BIEDRONKA", "AUCHAN"], "groceries", "Продукты"),
-    (["KEBAB", "MCDONALDS", "MCDONALD'S", "KFC", "DOMINOS", "WOLT", "PYSZNE"], "cafe", "Еда вне дома"),
-    (["KOLEO", "FLIXBUS", "JAKDOJADE", "DOPRAVNI", "DOPRAVNÍ"], "transport", "Транспорт"),
-    (["SPOTIFY", "YOUTUBE", "APPLE.COM", "CLAUDE.AI", "CLAUDE", "OPENAI", "SCRIBD"], "other", "Подписки"),
+    (["KAUFLAND", "LIDL", "BIEDRONKA", "AUCHAN", "CARREFOUR", "ŻABKA", "TESCO", "ALCAMPO", "A 101"], "groceries", "Продукты"),
+    (
+        [
+            "KEBAB", "MCDONALDS", "MCDONALD'S", "KFC", "DOMINOS", "WOLT", "PYSZNE",
+            "STARBUCKS", "BISTRO", "DÜRÜM", "PIVN", "RISTORANTE", "REBELBEAN",
+            "RESTAURACE", "POPEYES", "ASIA STAR", "ASIA GRAND",
+        ],
+        "cafe",
+        "Еда вне дома",
+    ),
+    (["KOLEO", "FLIXBUS", "JAKDOJADE", "DOPRAVNI", "DOPRAVNÍ", "ISTANBULKART", "BELBIM", "RYANAIR"], "transport", "Транспорт"),
+    (
+        [
+            "SPOTIFY", "YOUTUBE", "APPLE.COM", "CLAUDE.AI", "CLAUDE", "ANTHROPIC", "OPENAI", "SCRIBD",
+            "КОМИССИЯ ПО ПЛАНУ", "REVOLUT METAL", "ПЛАН METAL",
+        ],
+        "subscriptions",
+        "Подписки",
+    ),
+    (["ECZANESI"], "pharmacy", "Аптека"),
+    (["SPORTISIMO"], "clothing", "Одежда"),
     (["REVOLUT"], "other", "Перевод на Revolut"),
     (["STYPENDIA", "STYPENDIUM"], "other", "Стипендия"),
     (["AKADEMIK", "АКАДЕМИК", "CZYNSZ", "NAJEM", "WYNAJEM"], "housing", "Жильё"),
