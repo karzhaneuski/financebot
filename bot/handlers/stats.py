@@ -27,8 +27,9 @@ from bot.keyboards.inline import (
 )
 from bot.services.charts import build_bar_chart, build_pie_chart, build_trend_chart
 from bot.services.comparison import build_comparison_report
+from bot.services.forecast import format_forecast_line, get_month_forecast
 from bot.services.stats import format_stats_message, get_period_stats
-from bot.utils.formatters import currency_flag, format_date
+from bot.utils.formatters import MONTHS_GENITIVE, currency_flag, format_date
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -68,6 +69,48 @@ def _fmt_volume_long(ml: int) -> str:
     if ml >= 1000:
         return f"{ml:,} ml ({ml / 1000:.1f} L)".replace(",", " ")
     return f"{ml} ml"
+
+
+_SUBSCRIPTION_EMOJI: list[tuple[list[str], str]] = [
+    (["SPOTIFY"], "🎵"),
+    (["NETFLIX"], "🎬"),
+    (["YOUTUBE"], "▶️"),
+    (["CLAUDE", "ANTHROPIC", "OPENAI", "CHATGPT"], "🤖"),
+    (["REVOLUT", "METAL"], "💳"),
+    (["APPLE", "ICLOUD"], "🍎"),
+    (["GITHUB"], "🐙"),
+]
+
+
+def _subscription_emoji(store: str) -> str:
+    upper = store.upper()
+    for keywords, emoji in _SUBSCRIPTION_EMOJI:
+        if any(kw in upper for kw in keywords):
+            return emoji
+    return "🔁"
+
+
+def _fmt_next_expected(next_expected) -> str:
+    if next_expected is None:
+        return "неизвестно (одно списание)"
+    return f"~{next_expected.day} {MONTHS_GENITIVE[next_expected.month - 1]}"
+
+
+def _build_subscriptions_text(subs: list[dict]) -> str:
+    if not subs:
+        return "📅 *Подписки*\n\nПодписок пока не найдено."
+
+    lines = ["📅 *Подписки*\n"]
+    total = 0.0
+    for s in subs:
+        emoji = _subscription_emoji(s["store"])
+        lines.append(f" {emoji} {s['store']} — {s['monthly_total_pln']:.2f} PLN/мес")
+        lines.append(f"    Следующее списание: {_fmt_next_expected(s['next_expected'])}")
+        lines.append("")
+        total += s["monthly_total_pln"]
+
+    lines.append(f" Итого в месяц: ~{total:.2f} PLN")
+    return "\n".join(lines)
 
 
 def _visits_ru(n: int) -> str:
@@ -148,11 +191,32 @@ async def _append_currency_breakdown(text: str, session: AsyncSession, user_id: 
     return "\n".join(lines)
 
 
+async def _append_forecast(text: str, session: AsyncSession, user_id: int) -> str:
+    """Append the end-of-month forecast line. Caller restricts this to month-period views."""
+    line = format_forecast_line(await get_month_forecast(session, user_id))
+    if not line:
+        return text
+    return f"{text}\n\n{line}"
+
+
 # ── /stats entry point ────────────────────────────────────────────────────────
 
 @router.message(Command("stats"))
 async def cmd_stats(message: Message) -> None:
     await message.answer("📊 Статистика расходов:", reply_markup=stats_menu_keyboard())
+
+
+@router.message(Command("subscriptions"))
+async def cmd_subscriptions(message: Message, session: AsyncSession) -> None:
+    subs = await crud.get_subscriptions(session, message.from_user.id)
+    await message.answer(_build_subscriptions_text(subs), parse_mode="Markdown")
+
+
+@router.callback_query(F.data == "subs:show")
+async def subs_show_callback(call: CallbackQuery, session: AsyncSession) -> None:
+    await call.answer()
+    subs = await crud.get_subscriptions(session, call.from_user.id)
+    await call.message.edit_text(_build_subscriptions_text(subs), parse_mode="Markdown")
 
 
 # ── stats menu & period picker ────────────────────────────────────────────────
@@ -190,6 +254,8 @@ async def speriod_callback(
             return
         text = await format_stats_message(stats, label)
         text = await _append_currency_breakdown(text, session, call.from_user.id, days)
+        if period == "month":
+            text = await _append_forecast(text, session, call.from_user.id)
         await call.message.edit_text(text, parse_mode="Markdown")
         if stats["by_category"]:
             chart = await build_pie_chart(stats["by_category"], f"Расходы — {label}")
@@ -505,6 +571,8 @@ async def stats_callback(call: CallbackQuery, session: AsyncSession) -> None:
         return
     text = await format_stats_message(stats, label)
     text = await _append_currency_breakdown(text, session, call.from_user.id, days)
+    if days == 30:
+        text = await _append_forecast(text, session, call.from_user.id)
     await call.message.edit_text(text, parse_mode="Markdown")
     if stats["by_category"]:
         chart = await build_pie_chart(stats["by_category"], f"Расходы за {label}")

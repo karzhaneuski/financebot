@@ -28,11 +28,13 @@ from bot.keyboards.inline import (
 from bot.parsers.erste import categorize, is_erste_bank_statement, parse_erste_pdf
 from bot.parsers.revolut import is_revolut_statement, parse_revolut_csv
 from bot.services import budget as budget_service
+from bot.services.anomaly import check_anomaly
 from bot.services.currency import convert_to_pln
 from bot.services.normalization import normalize_item_names
 from bot.services.vision import parse_bank_transaction_screenshot, parse_receipt
 from bot.utils.formatters import (
     currency_flag,
+    format_category,
     format_currency,
     format_date_ru,
     format_items_list,
@@ -64,6 +66,15 @@ def _erste_redis_key(user_id: int) -> str:
 
 def _revolut_redis_key(user_id: int) -> str:
     return f"revolut_pending:{user_id}"
+
+
+def _format_anomaly_alert(receipt, category_display: str, anomaly: dict) -> str:
+    return (
+        "⚠️ *Необычная трата*\n"
+        f"{float(receipt.total_pln):.2f} PLN в {receipt.store or '?'} — это в "
+        f"{anomaly['multiplier']:.1f} раза больше среднего чека в категории «{category_display}» "
+        f"(обычно ~{anomaly['category_avg']:.0f} PLN)"
+    )
 
 
 @router.message(F.photo)
@@ -117,6 +128,13 @@ async def handle_receipt_photo(message: Message, bot: Bot, session: AsyncSession
             f"🏷 Категория: {display_cat}",
             reply_markup=recat_keyboard(receipt.id),
         )
+
+        anomaly = await check_anomaly(session, message.from_user.id, receipt)
+        if anomaly:
+            await message.answer(
+                _format_anomaly_alert(receipt, format_category(db_cat), anomaly),
+                parse_mode="Markdown",
+            )
         return
 
     try:
@@ -178,6 +196,13 @@ async def handle_receipt_photo(message: Message, bot: Bot, session: AsyncSession
         parse_mode="Markdown",
         reply_markup=recat_keyboard(receipt.id),
     )
+
+    anomaly = await check_anomaly(session, message.from_user.id, receipt)
+    if anomaly and items:
+        await message.answer(
+            _format_anomaly_alert(receipt, format_category(items[0].get("category", "other")), anomaly),
+            parse_mode="Markdown",
+        )
 
     await budget_service.check_and_notify_budgets(session, message.from_user.id, bot)
 

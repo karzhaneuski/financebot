@@ -4,6 +4,7 @@ from datetime import date, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.db import crud
+from bot.services.forecast import format_forecast_line, get_month_forecast
 from bot.utils.formatters import CATEGORY_NAMES, MONTHS_GENITIVE, MONTHS_NOMINATIVE
 
 CATEGORY_EMOJI = {
@@ -48,22 +49,26 @@ async def build_daily_report(session: AsyncSession, user_id: int, target_date: d
     header = f"📅 *Ежедневный отчёт — {day_str}*\n"
 
     if not receipts:
-        return header + "\nВчера трат не было 🎉"
+        body = header + "\nВчера трат не было 🎉"
+    else:
+        total = sum(float(r.total_pln) for r in receipts)
+        lines = [
+            header,
+            f"💸 Потрачено: *{_fmt(total)} PLN*",
+            f"🧾 Транзакций: *{len(receipts)}*",
+            "",
+            "Траты:",
+        ]
+        for r in receipts:
+            store = r.store or "Без названия"
+            emoji = _receipt_primary_emoji(r)
+            lines.append(f"• {store} — {_fmt(float(r.total_pln))} PLN  {emoji}")
+        body = "\n".join(lines)
 
-    total = sum(float(r.total_pln) for r in receipts)
-    lines = [
-        header,
-        f"💸 Потрачено: *{_fmt(total)} PLN*",
-        f"🧾 Транзакций: *{len(receipts)}*",
-        "",
-        "Траты:",
-    ]
-    for r in receipts:
-        store = r.store or "Без названия"
-        emoji = _receipt_primary_emoji(r)
-        lines.append(f"• {store} — {_fmt(float(r.total_pln))} PLN  {emoji}")
-
-    return "\n".join(lines)
+    forecast_line = format_forecast_line(await get_month_forecast(session, user_id))
+    if forecast_line:
+        body += "\n\n" + forecast_line
+    return body
 
 
 async def build_weekly_report(
@@ -76,7 +81,11 @@ async def build_weekly_report(
     header = f"📊 *Еженедельный отчёт — {start_str} – {end_str}*\n"
 
     if total == 0:
-        return header + "\nНа этой неделе трат не было 🎉"
+        body = header + "\nНа этой неделе трат не было 🎉"
+        forecast_line = format_forecast_line(await get_month_forecast(session, user_id))
+        if forecast_line:
+            body += "\n\n" + forecast_line
+        return body
 
     lines = [header, f"💸 Итого: *{_fmt(total)} PLN*", ""]
 
@@ -125,6 +134,11 @@ async def build_weekly_report(
         arrow = "📈" if diff_pct >= 0 else "📉"
         sign = "+" if diff_pct >= 0 else ""
         lines.append(f"vs прошлая неделя: {sign}{diff_pct}% {arrow}  (было {_fmt(prev_total)} PLN)")
+
+    forecast_line = format_forecast_line(await get_month_forecast(session, user_id))
+    if forecast_line:
+        lines.append("")
+        lines.append(forecast_line)
 
     return "\n".join(lines)
 

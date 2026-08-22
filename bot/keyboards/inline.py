@@ -27,6 +27,7 @@ def stats_menu_keyboard() -> InlineKeyboardMarkup:
     )
     builder.row(
         InlineKeyboardButton(text="🔄 Сравнить периоды", callback_data="stats_compare"),
+        InlineKeyboardButton(text="📅 Подписки", callback_data="subs:show"),
     )
     return builder.as_markup()
 
