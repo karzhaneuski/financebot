@@ -1,3 +1,4 @@
+import re
 from calendar import monthrange
 from datetime import date, datetime, timedelta
 from typing import Any
@@ -816,13 +817,38 @@ def _normalize_merchant(store: str) -> str:
     return " ".join(store.split()).upper()
 
 
+# Trailing payment-reference code or generic suffix word, e.g. "SPOTIFY P422DD162C"
+# -> "SPOTIFY", "CLAUDE SUBSCRIPTION" -> "CLAUDE". Requires the input to already be
+# uppercased (see _normalize_merchant) since it only matches uppercase/digit runs.
+_REFERENCE_SUFFIX_RE = re.compile(r"\s?[A-Z0-9]{8,12}$")
+
+
+def _strip_reference_suffix(store: str) -> str:
+    stripped = _REFERENCE_SUFFIX_RE.sub("", store).strip()
+    return stripped if len(stripped) > 2 else store
+
+
+def _merchant_group_key(store: str) -> str:
+    return _strip_reference_suffix(_normalize_merchant(store))
+
+
+# Categories that recur monthly for reasons unrelated to subscriptions (rent,
+# groceries, commute passes, ...) — pattern-based auto-detection must not fire
+# for these, only for "other"/uncategorized items or ones already tagged
+# category="subscriptions".
+_PATTERN_ELIGIBLE_CATEGORIES = {None, Category.other, Category.subscriptions}
+
+
 async def get_subscriptions(session: AsyncSession, user_id: int) -> list[dict[str, Any]]:
     """Merge category="subscriptions" receipts with auto-detected recurring payments.
 
     A receipt is category-matched if Receipt.category is "subscriptions" or (when
     that's unset, e.g. bulk bank imports) its first item is. It's pattern-matched
-    if it shares a normalized merchant + a within-5%-tolerance amount with another
-    receipt 25-35 days apart. Receipts satisfying both count once, as "both".
+    if it shares a merchant (normalized, with trailing reference codes/suffixes
+    stripped) + a within-5%-tolerance amount with another receipt 25-35 days apart,
+    and its category isn't one that recurs monthly for non-subscription reasons
+    (housing, groceries, transport, ...). Receipts satisfying both count once, as
+    "both".
     """
     stmt = (
         select(Receipt)
@@ -834,22 +860,32 @@ async def get_subscriptions(session: AsyncSession, user_id: int) -> list[dict[st
     if not receipts:
         return []
 
-    def _is_subscription_category(r: Receipt) -> bool:
+    def _primary_category(r: Receipt) -> Category | None:
         if r.category is not None:
-            return r.category == Category.subscriptions
-        return bool(r.items) and r.items[0].category == Category.subscriptions
+            return r.category
+        return r.items[0].category if r.items else None
+
+    def _is_subscription_category(r: Receipt) -> bool:
+        return _primary_category(r) == Category.subscriptions
+
+    def _pattern_eligible(r: Receipt) -> bool:
+        return _primary_category(r) in _PATTERN_ELIGIBLE_CATEGORIES
 
     groups: dict[str, list[Receipt]] = {}
     for r in receipts:
-        groups.setdefault(_normalize_merchant(r.store), []).append(r)
+        groups.setdefault(_merchant_group_key(r.store), []).append(r)
 
+    today = datetime.utcnow().date()
     results: list[dict[str, Any]] = []
     for group in groups.values():
         group.sort(key=lambda r: r.date)
         category_matches = [r for r in group if _is_subscription_category(r)]
 
         pattern_matches: dict[int, Receipt] = {}
+        pattern_gaps: list[int] = []
         for prev, curr in zip(group, group[1:]):
+            if not (_pattern_eligible(prev) and _pattern_eligible(curr)):
+                continue
             gap_days = (curr.date - prev.date).days
             if not (25 <= gap_days <= 35):
                 continue
@@ -859,6 +895,7 @@ async def get_subscriptions(session: AsyncSession, user_id: int) -> list[dict[st
             if abs(float(curr.total_pln) - float(prev.total_pln)) <= 0.05 * avg_amount:
                 pattern_matches[prev.id] = prev
                 pattern_matches[curr.id] = curr
+                pattern_gaps.append(gap_days)
 
         if not category_matches and not pattern_matches:
             continue
@@ -871,12 +908,19 @@ async def get_subscriptions(session: AsyncSession, user_id: int) -> list[dict[st
         relevant.update(pattern_matches)
         last = max(relevant.values(), key=lambda r: r.date)
 
+        next_expected = None
+        if is_pattern:
+            interval = round(sum(pattern_gaps) / len(pattern_gaps))
+            next_expected = last.date + timedelta(days=interval)
+            while next_expected < today:
+                next_expected += timedelta(days=interval)
+
         results.append({
-            "store": last.store,
+            "store": min((r.store for r in group), key=len),
             "amount": float(last.total),
             "currency": last.currency,
             "last_charge": last.date,
-            "next_expected": last.date + timedelta(days=30) if is_pattern else None,
+            "next_expected": next_expected,
             "monthly_total_pln": float(last.total_pln),
             "detection": detection,
         })

@@ -564,7 +564,7 @@ async def _ask_foreign_merchant(message: Message, pm: dict) -> None:
     )
 
 
-@router.message(ForeignMerchantStates.waiting_merchant)
+@router.message(ForeignMerchantStates.waiting_merchant, ~F.text.startswith("/"))
 async def handle_foreign_merchant_name(
     message: Message,
     state: FSMContext,
