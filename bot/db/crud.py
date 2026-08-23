@@ -839,16 +839,30 @@ def _merchant_group_key(store: str) -> str:
 _PATTERN_ELIGIBLE_CATEGORIES = {None, Category.other, Category.subscriptions}
 
 
+# Pattern-based detection needs at least this many chained, tolerance-matching
+# occurrences — 2 lets coincidental same-amount one-offs (e.g. two unrelated
+# bus-ticket top-ups) through; 3+ is much stronger evidence of a real recurrence.
+_PATTERN_MIN_OCCURRENCES = 3
+
+
 async def get_subscriptions(session: AsyncSession, user_id: int) -> list[dict[str, Any]]:
     """Merge category="subscriptions" receipts with auto-detected recurring payments.
 
     A receipt is category-matched if Receipt.category is "subscriptions" or (when
     that's unset, e.g. bulk bank imports) its first item is. It's pattern-matched
-    if it shares a merchant (normalized, with trailing reference codes/suffixes
-    stripped) + a within-5%-tolerance amount with another receipt 25-35 days apart,
-    and its category isn't one that recurs monthly for non-subscription reasons
-    (housing, groceries, transport, ...). Receipts satisfying both count once, as
-    "both".
+    if it's part of a chain of _PATTERN_MIN_OCCURRENCES+ receipts sharing a merchant
+    (normalized, with trailing reference codes/suffixes stripped), each consecutive
+    pair within 5%-tolerance amount and 25-35 days apart, and its category isn't one
+    that recurs monthly for non-subscription reasons (housing, groceries, transport,
+    ...). Receipts satisfying both count once, as "both".
+
+    Display fields (amount/currency/last_charge) always reflect the merchant
+    group's chronologically latest receipt, since prices can change over time.
+    A subscription that hasn't recurred in over 2x its average pattern interval
+    is treated as stale: if it's pattern-only (no category tag backing it), it's
+    dropped from the results entirely (likely cancelled); if it's category-tagged
+    ("category" or "both"), it's kept but next_expected reverts to unknown rather
+    than projecting a date into a series that's actually stopped.
     """
     stmt = (
         select(Receipt)
@@ -897,31 +911,36 @@ async def get_subscriptions(session: AsyncSession, user_id: int) -> list[dict[st
                 pattern_matches[curr.id] = curr
                 pattern_gaps.append(gap_days)
 
-        if not category_matches and not pattern_matches:
+        is_category = bool(category_matches)
+        is_pattern = len(pattern_matches) >= _PATTERN_MIN_OCCURRENCES
+
+        if not is_category and not is_pattern:
             continue
 
-        is_category = bool(category_matches)
-        is_pattern = bool(pattern_matches)
         detection = "both" if is_category and is_pattern else ("pattern" if is_pattern else "category")
-
-        relevant = {r.id: r for r in category_matches}
-        relevant.update(pattern_matches)
-        last = max(relevant.values(), key=lambda r: r.date)
+        latest = group[-1]  # chronologically most recent receipt for this merchant
 
         next_expected = None
         if is_pattern:
             interval = round(sum(pattern_gaps) / len(pattern_gaps))
-            next_expected = last.date + timedelta(days=interval)
-            while next_expected < today:
-                next_expected += timedelta(days=interval)
+            days_since_last = (today - latest.date).days
+            is_stale = days_since_last > 2 * interval
+            if is_stale and not is_category:
+                continue  # pattern-only and hasn't recurred in a long time -> likely cancelled
+            if not is_stale:
+                next_expected = latest.date + timedelta(days=interval)
+                while next_expected < today:
+                    next_expected += timedelta(days=interval)
+            # else: category-tagged but stale -> keep the entry, but next_expected
+            # reverts to unknown rather than projecting into a series that stopped.
 
         results.append({
             "store": min((r.store for r in group), key=len),
-            "amount": float(last.total),
-            "currency": last.currency,
-            "last_charge": last.date,
+            "amount": float(latest.total),
+            "currency": latest.currency,
+            "last_charge": latest.date,
             "next_expected": next_expected,
-            "monthly_total_pln": float(last.total_pln),
+            "monthly_total_pln": float(latest.total_pln),
             "detection": detection,
         })
 
