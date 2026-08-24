@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtualenvs
+.venv/
+venv/
+
+# OS junk
+.DS_Store
+
+# Local env & scratch
+.env
+*.sqlite3
+.pytest_cache/

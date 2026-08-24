@@ -13,7 +13,7 @@ from aiogram.types import ErrorEvent
 from bot.api.app import app as fastapi_app
 from bot.config import settings
 from bot.db.engine import engine
-from bot.handlers import budget, common, export, manual, receipt, reports, stats
+from bot.handlers import budget, common, export, manual, receipt, reports, search, split, stats
 from bot.scheduler import setup_scheduler
 from bot.middleware import DbSessionMiddleware, RedisMiddleware
 
@@ -63,6 +63,8 @@ async def main() -> None:
     dp.include_router(manual.router)
     dp.include_router(export.router)
     dp.include_router(reports.router)
+    dp.include_router(search.router)
+    dp.include_router(split.router)
 
     @dp.errors()
     async def global_error_handler(event: ErrorEvent) -> bool:

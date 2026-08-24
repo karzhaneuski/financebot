@@ -51,7 +51,7 @@ async def build_daily_report(session: AsyncSession, user_id: int, target_date: d
     if not receipts:
         body = header + "\nВчера трат не было 🎉"
     else:
-        total = sum(float(r.total_pln) for r in receipts)
+        total = sum(r.personal_amount() for r in receipts)
         lines = [
             header,
             f"💸 Потрачено: *{_fmt(total)} PLN*",
@@ -62,7 +62,7 @@ async def build_daily_report(session: AsyncSession, user_id: int, target_date: d
         for r in receipts:
             store = r.store or "Без названия"
             emoji = _receipt_primary_emoji(r)
-            lines.append(f"• {store} — {_fmt(float(r.total_pln))} PLN  {emoji}")
+            lines.append(f"• {store} — {_fmt(r.personal_amount())} PLN  {emoji}")
         body = "\n".join(lines)
 
     forecast_line = format_forecast_line(await get_month_forecast(session, user_id))

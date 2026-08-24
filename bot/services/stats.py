@@ -29,7 +29,7 @@ def _times_ru(n: int) -> str:
 
 async def get_period_stats(session: AsyncSession, user_id: int, days: int) -> dict:
     receipts = await crud.get_receipts(session, user_id, days)
-    total_pln = sum(float(r.total_pln) for r in receipts)
+    total_pln = sum(r.personal_amount() for r in receipts)
     receipt_count = len(receipts)
 
     by_category_raw = await crud.get_spending_by_category(session, user_id, days)

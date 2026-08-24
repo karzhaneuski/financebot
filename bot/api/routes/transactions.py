@@ -33,7 +33,7 @@ async def recent_transactions(
             "id": r.id,
             "date": r.date.isoformat() if r.date else None,
             "store": r.store,
-            "amount": round(float(r.total_pln), 2),
+            "amount": round(r.personal_amount(), 2),
             "currency": r.currency,
             "original_amount": round(float(r.total), 2),
             "category": cat,

@@ -63,13 +63,18 @@ financebot/
 
 ## Database schema
 ```
-receipts: id, user_id, store, date, currency, total, total_pln, photo_file_id, created_at
-items: id, receipt_id, name, quantity, unit_price, total_price, category
-budgets: id, user_id, category, limit_pln, month (YYYY-MM)
+receipts: id, user_id, store, date, currency, total, total_pln, personal_total_pln,
+          photo_file_id, tx_type, source, category, created_at
+items: id, receipt_id, name, normalized_name, quantity, unit_price, total_price,
+       category, volume_ml, is_personal
+budgets: id, user_id, category, limit_pln, month (YYYY-MM), last_notified_pct
 ```
+`receipts.personal_total_pln` and `items.is_personal` are both nullable —
+NULL means "never split", which must behave exactly like the pre-/split
+schema (see "Personal totals & splitting" below).
 
 ### Categories (fixed enum)
-`groceries | cafe | pharmacy | transport | electronics | clothing | household | other`
+`groceries | cafe | pharmacy | transport | electronics | clothing | household | housing | entertainment | health | subscriptions | other`
 
 ## Claude Vision — system prompt
 ```
@@ -113,14 +118,51 @@ Rules:
 
 ## Bot commands
 ```
-/start     — welcome message
-/help      — list of commands
-/stats     — show stats menu (week / month / year)
-/budget    — budget management
-/add       — manual expense entry
-/export    — export to Excel
-/cancel    — cancel current operation
+/start          — welcome message
+/help           — list of commands
+/stats          — show stats menu (week / month / year)
+/subscriptions  — detected recurring subscriptions
+/budget         — budget management
+/add            — manual expense entry
+/export         — export to Excel
+/reports        — daily/weekly/monthly report settings
+/search, /find  — natural-language transaction search (Haiku parser + fallback)
+/wrapped        — year-in-review summary image
+/split          — split a receipt's items between personal/not-personal
+/cancel         — cancel current operation
+/reset          — reset FSM state (requires "confirm" arg)
 ```
+
+## Personal totals & splitting (`/split`)
+- `items.is_personal` marks individual line items as mine (`True`) vs not
+  mine (`False`) after running `/split` on a receipt. NULL = item was never
+  touched by `/split` and counts as fully personal (pre-split behaviour).
+- **Category aggregates are all-or-nothing**, not proportional:
+  `get_spending_by_category*` filter on `COALESCE(items.is_personal, TRUE)`
+  — an item counts in full toward its category or not at all.
+- **Receipt-level personal sums** (totals, income/expenses, daily, by-store,
+  by-currency, cash withdrawals) use `COALESCE(receipts.personal_total_pln,
+  receipts.total_pln)` (`crud._personal_pln_col()`).
+- `crud.set_item_personal_flags()` derives `personal_total_pln` from the
+  flagged items' share of the receipt's **native**-currency total
+  (`my_native / receipt.total`, clamped to `[0, 1]`), multiplied by the
+  receipt's already-stored `total_pln` — it reuses the FX rate baked in at
+  parse time and never re-fetches one. Item sums exceeding the receipt total
+  (discount-line quirks) simply clamp to 100% personal rather than erroring.
+- Product-stats functions and Excel export stay household-level by design —
+  `is_personal` deliberately does not filter them.
+
+## Known limitations
+- **Miniapp native vs. PLN**: `/api/transactions/recent` returns `amount`
+  (personal PLN share via `Receipt.personal_amount()`) next to
+  `original_amount` (the full native-currency `total`, *not* scaled by the
+  split share). For a split receipt these two figures are not proportional —
+  don't assume `original_amount` reflects only the personal portion.
+- **`/search` fallback honesty**: when the Haiku query parser
+  (`search_parser.parse_search_query`) fails, `/search` falls back to a
+  regex parser and appends "⚠️ Поиск выполнен по упрощённым правилам —
+  результаты могут быть неточными." to the results. Any future change to
+  search must keep this fallback self-disclosed, not silent.
 
 ## Environment variables (.env)
 ```

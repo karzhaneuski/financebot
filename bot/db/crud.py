@@ -3,7 +3,7 @@ from calendar import monthrange
 from datetime import date, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -16,6 +16,20 @@ def _get_since(period_key: str) -> date | None:
     if days is None:
         return None
     return datetime.utcnow().date() - timedelta(days=days)
+
+
+def _personal_pln_col():
+    """Personal expense amount: split share when set, else the full total (Feature 3)."""
+    return func.coalesce(Receipt.personal_total_pln, Receipt.total_pln)
+
+
+def _personal_item_filter():
+    """Condition matching only items that count toward the user's personal totals.
+
+    items.is_personal is NULL for anything not touched by /split — those
+    count as fully personal (pre-split behaviour preserved).
+    """
+    return func.coalesce(Item.is_personal, True).is_(True)
 
 
 async def create_receipt(
@@ -96,7 +110,7 @@ async def get_spending_by_category(session: AsyncSession, user_id: int, days: in
             func.sum(Item.total_price).label("total_pln"),
         )
         .join(Receipt, Item.receipt_id == Receipt.id)
-        .where(Receipt.user_id == user_id, Receipt.date >= since)
+        .where(Receipt.user_id == user_id, Receipt.date >= since, _personal_item_filter())
         .group_by(Item.category)
         .order_by(func.sum(Item.total_price).desc())
     )
@@ -109,7 +123,7 @@ async def get_spending_by_store(session: AsyncSession, user_id: int, days: int) 
     stmt = (
         select(
             Receipt.store,
-            func.sum(Receipt.total_pln).label("total_pln"),
+            func.sum(_personal_pln_col()).label("total_pln"),
             func.count(Receipt.id).label("visits"),
         )
         .where(
@@ -119,7 +133,7 @@ async def get_spending_by_store(session: AsyncSession, user_id: int, days: int) 
             (Receipt.tx_type != "cash_withdrawal") | Receipt.tx_type.is_(None),
         )
         .group_by(Receipt.store)
-        .order_by(func.sum(Receipt.total_pln).desc())
+        .order_by(func.sum(_personal_pln_col()).desc())
     )
     result = await session.execute(stmt)
     return [{"store": row.store, "total_pln": float(row.total_pln), "visits": row.visits} for row in result]
@@ -127,7 +141,7 @@ async def get_spending_by_store(session: AsyncSession, user_id: int, days: int) 
 
 async def get_cash_withdrawal_total(session: AsyncSession, user_id: int, days: int) -> float:
     since = datetime.utcnow().date() - timedelta(days=days)
-    stmt = select(func.sum(Receipt.total_pln)).where(
+    stmt = select(func.sum(_personal_pln_col())).where(
         Receipt.user_id == user_id,
         Receipt.date >= since,
         Receipt.tx_type == "cash_withdrawal",
@@ -314,9 +328,12 @@ async def get_monthly_spending_by_category(session: AsyncSession, user_id: int, 
     end = date(year, mon, last_day)
 
     stmt = (
-        select(Item.category, func.sum(Item.total_price).label("total_pln"))
+        select(
+            Item.category,
+            func.sum(Item.total_price).label("total_pln"),
+        )
         .join(Receipt, Item.receipt_id == Receipt.id)
-        .where(Receipt.user_id == user_id, Receipt.date >= start, Receipt.date <= end)
+        .where(Receipt.user_id == user_id, Receipt.date >= start, Receipt.date <= end, _personal_item_filter())
         .group_by(Item.category)
     )
     result = await session.execute(stmt)
@@ -348,7 +365,7 @@ async def get_daily_spending(session: AsyncSession, user_id: int, days: int) -> 
     stmt = (
         select(
             Receipt.date.label("day"),
-            func.sum(Receipt.total_pln).label("total"),
+            func.sum(_personal_pln_col()).label("total"),
         )
         .where(Receipt.user_id == user_id, Receipt.date >= since, Receipt.date.isnot(None))
         .group_by(Receipt.date)
@@ -393,7 +410,12 @@ async def delete_user_data(session: AsyncSession, user_id: int) -> dict[str, int
 
 
 async def get_receipt_by_id(session: AsyncSession, receipt_id: int) -> Receipt | None:
-    result = await session.execute(select(Receipt).where(Receipt.id == receipt_id))
+    stmt = (
+        select(Receipt)
+        .where(Receipt.id == receipt_id)
+        .options(selectinload(Receipt.items))
+    )
+    result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
 
@@ -412,11 +434,22 @@ def _norm_col():
     return func.coalesce(Item.normalized_name, func.lower(Item.name))
 
 
-async def get_products_stats(session: AsyncSession, user_id: int, period_key: str) -> list[dict[str, Any]]:
+async def get_products_stats(
+    session: AsyncSession,
+    user_id: int,
+    period_key: str,
+    date_from: date | None = None,
+    date_to: date | None = None,
+) -> list[dict[str, Any]]:
     since = _get_since(period_key)
     conditions = [Receipt.user_id == user_id, Receipt.photo_file_id.isnot(None)]
     if since:
         conditions.append(Receipt.date >= since)
+    # Explicit range (used by /wrapped for year scoping) overrides period_key.
+    if date_from:
+        conditions.append(Receipt.date >= date_from)
+    if date_to:
+        conditions.append(Receipt.date <= date_to)
 
     stmt = (
         select(
@@ -528,12 +561,12 @@ async def get_store_stats_by_period(session: AsyncSession, user_id: int, period_
     stmt = (
         select(
             Receipt.store,
-            func.sum(Receipt.total_pln).label("total_pln"),
+            func.sum(_personal_pln_col()).label("total_pln"),
             func.count(Receipt.id).label("visits"),
         )
         .where(*conditions)
         .group_by(Receipt.store)
-        .order_by(func.sum(Receipt.total_pln).desc())
+        .order_by(func.sum(_personal_pln_col()).desc())
     )
     result = await session.execute(stmt)
     return [{"store": r.store, "total_pln": float(r.total_pln), "visits": r.visits} for r in result]
@@ -599,9 +632,12 @@ async def get_spending_by_category_range(
     session: AsyncSession, user_id: int, date_from: date, date_to: date
 ) -> list[dict[str, Any]]:
     stmt = (
-        select(Item.category, func.sum(Item.total_price).label("total_pln"))
+        select(
+            Item.category,
+            func.sum(Item.total_price).label("total_pln"),
+        )
         .join(Receipt, Item.receipt_id == Receipt.id)
-        .where(Receipt.user_id == user_id, Receipt.date >= date_from, Receipt.date <= date_to)
+        .where(Receipt.user_id == user_id, Receipt.date >= date_from, Receipt.date <= date_to, _personal_item_filter())
         .group_by(Item.category)
         .order_by(func.sum(Item.total_price).desc())
     )
@@ -613,7 +649,7 @@ async def get_spending_by_store_range(
     session: AsyncSession, user_id: int, date_from: date, date_to: date
 ) -> list[dict[str, Any]]:
     stmt = (
-        select(Receipt.store, func.sum(Receipt.total_pln).label("total_pln"), func.count(Receipt.id).label("visits"))
+        select(Receipt.store, func.sum(_personal_pln_col()).label("total_pln"), func.count(Receipt.id).label("visits"))
         .where(
             Receipt.user_id == user_id,
             Receipt.date >= date_from,
@@ -622,7 +658,7 @@ async def get_spending_by_store_range(
             (Receipt.tx_type != "cash_withdrawal") | Receipt.tx_type.is_(None),
         )
         .group_by(Receipt.store)
-        .order_by(func.sum(Receipt.total_pln).desc())
+        .order_by(func.sum(_personal_pln_col()).desc())
     )
     result = await session.execute(stmt)
     return [{"store": row.store, "total_pln": float(row.total_pln), "visits": row.visits} for row in result]
@@ -631,7 +667,7 @@ async def get_spending_by_store_range(
 async def get_total_spending_range(
     session: AsyncSession, user_id: int, date_from: date, date_to: date
 ) -> tuple[float, int]:
-    stmt = select(func.sum(Receipt.total_pln), func.count(Receipt.id)).where(
+    stmt = select(func.sum(_personal_pln_col()), func.count(Receipt.id)).where(
         Receipt.user_id == user_id, Receipt.date >= date_from, Receipt.date <= date_to
     )
     row = (await session.execute(stmt)).one()
@@ -646,8 +682,15 @@ async def get_spending_by_currency(
     stmt = (
         select(
             Receipt.currency,
-            func.sum(Receipt.total).label("total_original"),
-            func.sum(Receipt.total_pln).label("total_pln"),
+            # Native-currency total scaled by the same personal share as the
+            # PLN column, so a split EUR receipt shows matching halves
+            # (e.g. "150 EUR ≈ 125 PLN") instead of inconsistent split states.
+            func.sum(
+                Receipt.total * func.coalesce(
+                    _personal_pln_col() / func.nullif(Receipt.total_pln, 0), 1.0
+                )
+            ).label("total_original"),
+            func.sum(_personal_pln_col()).label("total_pln"),
             func.count(Receipt.id).label("count"),
         )
         .where(
@@ -657,7 +700,7 @@ async def get_spending_by_currency(
             (Receipt.tx_type != "income") | Receipt.tx_type.is_(None),
         )
         .group_by(Receipt.currency)
-        .order_by(func.sum(Receipt.total_pln).desc())
+        .order_by(func.sum(_personal_pln_col()).desc())
     )
     result = await session.execute(stmt)
     return [
@@ -709,7 +752,7 @@ async def get_all_users_with_reports(session: AsyncSession, report_type: str) ->
 async def get_income_by_range(
     session: AsyncSession, user_id: int, date_from: date, date_to: date
 ) -> float:
-    stmt = select(func.sum(Receipt.total_pln)).where(
+    stmt = select(func.sum(_personal_pln_col())).where(
         Receipt.user_id == user_id,
         Receipt.date >= date_from,
         Receipt.date <= date_to,
@@ -723,7 +766,7 @@ async def get_income_by_range(
 async def get_expenses_total_range(
     session: AsyncSession, user_id: int, date_from: date, date_to: date
 ) -> float:
-    stmt = select(func.sum(Receipt.total_pln)).where(
+    stmt = select(func.sum(_personal_pln_col())).where(
         Receipt.user_id == user_id,
         Receipt.date >= date_from,
         Receipt.date <= date_to,
@@ -738,7 +781,7 @@ async def get_daily_spending_and_income(
     session: AsyncSession, user_id: int, date_from: date, date_to: date
 ) -> list[dict[str, Any]]:
     spent_stmt = (
-        select(Receipt.date.label("day"), func.sum(Receipt.total_pln).label("total"))
+        select(Receipt.date.label("day"), func.sum(_personal_pln_col()).label("total"))
         .where(
             Receipt.user_id == user_id,
             Receipt.date >= date_from,
@@ -753,7 +796,7 @@ async def get_daily_spending_and_income(
     }
 
     income_stmt = (
-        select(Receipt.date.label("day"), func.sum(Receipt.total_pln).label("total"))
+        select(Receipt.date.label("day"), func.sum(_personal_pln_col()).label("total"))
         .where(
             Receipt.user_id == user_id,
             Receipt.date >= date_from,
@@ -980,3 +1023,117 @@ async def get_category_average(
 
     total = sum(float(r.total_pln) for r in matched)
     return total / len(matched), len(matched)
+
+
+async def search_transactions(
+    session: AsyncSession,
+    user_id: int,
+    merchant: str | None = None,
+    category: str | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+    amount_min: float | None = None,
+    amount_max: float | None = None,
+    include_cash: bool = False,
+) -> list[Receipt]:
+    """Natural-language search results (Feature 1).
+
+    Fuzzy (case-insensitive substring) merchant match, optional category /
+    date-range / PLN-amount filters. Cash withdrawals are excluded unless
+    the query explicitly asked for cash.
+    """
+    conditions = [Receipt.user_id == user_id]
+    if merchant:
+        conditions.append(Receipt.store.ilike(f"%{merchant}%"))
+    if category:
+        try:
+            cat = Category(category)
+        except ValueError:
+            cat = None
+        if cat is not None:
+            # OCR receipts carry category only on their items, so also match
+            # via an EXISTS over items.
+            conditions.append(
+                or_(
+                    Receipt.category == cat,
+                    select(Item.id)
+                    .where(Item.receipt_id == Receipt.id, Item.category == cat)
+                    .exists(),
+                )
+            )
+    if date_from:
+        conditions.append(Receipt.date >= date_from)
+    if date_to:
+        conditions.append(Receipt.date <= date_to)
+    if amount_min is not None:
+        conditions.append(_personal_pln_col() >= amount_min)
+    if amount_max is not None:
+        conditions.append(_personal_pln_col() <= amount_max)
+    if not include_cash:
+        conditions.append(
+            (Receipt.tx_type != "cash_withdrawal") | Receipt.tx_type.is_(None)
+        )
+
+    stmt = (
+        select(Receipt)
+        .where(*conditions)
+        .order_by(Receipt.date.desc().nullslast(), Receipt.id.desc())
+        # Hard cap: results are paginated client-side; item details for the
+        # current page are fetched separately by the handler.
+        .limit(200)
+    )
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def set_item_personal_flags(
+    session: AsyncSession, receipt_id: int, mine_item_ids: list[int]
+) -> Receipt | None:
+    """Persist /split results (Feature 3).
+
+    Sets items.is_personal for every item of the receipt (True = mine,
+    False = not mine; NULL stays only for receipts never split), then
+    recomputes and stores Receipt.personal_total_pln from those flags using
+    the rate already baked into the receipt — no fresh FX fetch.
+    """
+    receipt = await get_receipt_by_id(session, receipt_id)
+    if receipt is None:
+        return None
+
+    mine = set(mine_item_ids)
+    my_native = 0.0
+    for it in receipt.items:
+        it.is_personal = it.id in mine
+        if it.id in mine:
+            my_native += float(it.total_price)
+
+    native_total = float(receipt.total)
+    total_pln = float(receipt.total_pln)
+    if native_total > 0:
+        share = max(0.0, min(1.0, my_native / native_total))
+    else:
+        share = 1.0
+    receipt.personal_total_pln = round(share * total_pln, 2)
+    return receipt
+
+
+async def get_recent_receipts_with_items(
+    session: AsyncSession, user_id: int, limit: int = 10
+) -> list[Receipt]:
+    """Last N receipts with items loaded, most recent first — for /split."""
+    today = datetime.utcnow().date()
+    week_ago = today - timedelta(days=7)
+    stmt = (
+        select(Receipt)
+        .where(
+            Receipt.user_id == user_id,
+            (Receipt.tx_type != "income") | Receipt.tx_type.is_(None),
+        )
+        .options(selectinload(Receipt.items))
+        .order_by(Receipt.date.desc().nullslast(), Receipt.id.desc())
+        .limit(limit * 2)
+    )
+    rows = list((await session.execute(stmt)).scalars().all())
+    # Prefer receipts from the last 7 days; fall back to plain most recent.
+    recent = [r for r in rows if r.date and r.date >= week_ago]
+    return (recent or rows)[:limit]

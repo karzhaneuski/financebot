@@ -35,6 +35,9 @@ class Receipt(Base):
     currency: Mapped[str] = mapped_column(String(10), nullable=False)
     total: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
     total_pln: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
+    # Personal share after splitting a receipt with other people (Feature 3).
+    # NULL means the whole receipt is personal — treat as equal to total_pln.
+    personal_total_pln: Mapped[Optional[float]] = mapped_column(Numeric(12, 2), nullable=True)
     photo_file_id: Mapped[Optional[str]] = mapped_column(String(255))
     tx_type: Mapped[Optional[str]] = mapped_column(String(20))
     source: Mapped[Optional[str]] = mapped_column(String(20))
@@ -42,6 +45,12 @@ class Receipt(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     items: Mapped[List["Item"]] = relationship("Item", back_populates="receipt", cascade="all, delete-orphan")
+
+    def personal_amount(self) -> float:
+        """Amount that counts toward this user's personal expense totals."""
+        if self.personal_total_pln is not None:
+            return float(self.personal_total_pln)
+        return float(self.total_pln)
 
     def __repr__(self) -> str:
         return f"<Receipt id={self.id} user_id={self.user_id} store={self.store!r} total={self.total} {self.currency}>"
@@ -59,6 +68,9 @@ class Item(Base):
     total_price: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
     category: Mapped[Category] = mapped_column(Enum(Category), nullable=False, default=Category.other)
     volume_ml: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    # Personal-share marker after /split (Feature 3). NULL means "counts as
+    # personal" so pre-split receipts behave exactly as before.
+    is_personal: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
 
     receipt: Mapped["Receipt"] = relationship("Receipt", back_populates="items")
 
