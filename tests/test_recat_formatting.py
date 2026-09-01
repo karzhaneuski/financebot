@@ -121,6 +121,47 @@ async def test_recat_message_matches_save_message_for_foreign_currency(db_sessio
 
 
 @pytest.mark.asyncio
+async def test_receipt_photo_amount_matches_recat_amount(db_session):
+    """The OCR receipt-photo card and the post-recat edit render the amount
+    through the same helper, so a foreign-currency receipt reads identically in
+    both (the '💰 Итого:' line and the '🏪 ...' line carry the same value)."""
+    parsed = {
+        "store": "Kaufland",
+        "date": "2026-08-30",
+        "currency": "EUR",
+        "total": 13.04,
+        "items": [
+            {"name": "Kaffee", "quantity": 1, "unit_price": 13.04,
+             "total_price": 13.04, "category": "groceries"},
+        ],
+    }
+    message = _FakeMessage()
+
+    with patch(
+        "bot.handlers.receipt.parse_bank_transaction_screenshot",
+        AsyncMock(return_value=None),
+    ), patch(
+        "bot.handlers.receipt.parse_receipt", AsyncMock(return_value=parsed)
+    ), patch(
+        "bot.handlers.receipt.normalize_item_names", AsyncMock(return_value=None)
+    ), patch("bot.handlers.receipt.check_anomaly", AsyncMock(return_value=None)):
+        await handle_receipt_photo(
+            message, bot=_FakeBot(), session=db_session, redis=_FakeRedis()
+        )
+
+    save_text = message.status.text
+    total_line = next(l for l in save_text.splitlines() if l.startswith("💰 Итого:"))
+    expected = f"13.04 € (≈ {round(13.04 * EUR_RATE, 2):.2f} zł)"
+    assert total_line == f"💰 Итого: {expected}"
+
+    receipt = await get_receipt_by_id(db_session, 1)
+    call = _FakeCall(f"recat_set:{receipt.id}:groceries")
+    await recat_set_callback(call, session=db_session)
+
+    assert _amount_line(call.message.text) == f"🏪 Kaufland — {expected}"
+
+
+@pytest.mark.asyncio
 async def test_recat_message_for_pln_receipt_has_no_conversion_suffix(db_session):
     """A plain PLN receipt shows just the złoty amount — no '(≈ ...)' tail."""
     receipt, _ = await make_receipt(

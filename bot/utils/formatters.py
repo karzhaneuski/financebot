@@ -70,10 +70,10 @@ def format_receipt_amount(receipt) -> str:
     """Amount of a saved receipt: native sum, plus a PLN approximation when the
     receipt isn't already in PLN.
 
-    Single source of truth for every confirmation message about one receipt
-    (initial save and post-/recat edit alike) — these used to be formatted
-    separately and drifted apart, showing the native amount under a "PLN"
-    label for foreign-currency receipts.
+    The single place in the app that knows how to display one receipt's
+    amount — photo, PDF and bank-screenshot confirmations plus the post-/recat
+    edit all render through here. They used to format it separately and drifted
+    apart, showing the native amount under a "PLN" label after a recat.
     """
     currency = receipt.currency or "PLN"
     text = format_currency(float(receipt.total), currency)

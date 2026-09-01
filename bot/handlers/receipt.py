@@ -35,10 +35,8 @@ from bot.services.vision import parse_bank_transaction_screenshot, parse_receipt
 from bot.utils.formatters import (
     currency_flag,
     format_category,
-    format_currency,
     format_date_ru,
     format_items_list,
-    format_pln,
     format_receipt_amount,
 )
 
@@ -181,11 +179,8 @@ async def handle_receipt_photo(message: Message, bot: Bot, session: AsyncSession
         "✅ *Чек сохранён!*\n",
         f"🏪 Магазин: {store}",
         f"📅 Дата: {date_str}",
-        f"💰 Итого: {format_currency(total, currency)}",
+        f"💰 Итого: {format_receipt_amount(receipt)}",
     ]
-
-    if currency != "PLN":
-        lines.append(f"🇵🇱 В злотых: ≈ {format_pln(total_pln)}")
 
     if items:
         lines.append(f"\n📦 Товары ({len(items)}):")
@@ -459,7 +454,7 @@ async def _handle_pdf_receipt(
     if data.get("items"):
         await normalize_item_names(data["items"])
 
-    await create_receipt(
+    receipt = await create_receipt(
         session,
         user_id=message.from_user.id,
         data=data,
@@ -475,11 +470,8 @@ async def _handle_pdf_receipt(
         "✅ *Чек из PDF сохранён!*\n",
         f"🏪 Магазин: {store}",
         f"📅 Дата: {date_str}",
-        f"💰 Итого: {format_currency(total, currency)}",
+        f"💰 Итого: {format_receipt_amount(receipt)}",
     ]
-
-    if currency != "PLN":
-        lines.append(f"🇵🇱 В злотых: ≈ {format_pln(total_pln)}")
 
     if items:
         lines.append(f"\n📦 Товары ({len(items)}):")
