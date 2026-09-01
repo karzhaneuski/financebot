@@ -185,7 +185,7 @@ async def handle_receipt_photo(message: Message, bot: Bot, session: AsyncSession
     if items:
         lines.append(f"\n📦 Товары ({len(items)}):")
         preview = items[:10]
-        lines.append(format_items_list(preview))
+        lines.append(format_items_list(preview, receipt.currency))
         if len(items) > 10:
             lines.append(f"  ... и ещё {len(items) - 10} позиций")
 
@@ -476,7 +476,7 @@ async def _handle_pdf_receipt(
     if items:
         lines.append(f"\n📦 Товары ({len(items)}):")
         preview = items[:10]
-        lines.append(format_items_list(preview))
+        lines.append(format_items_list(preview, receipt.currency))
         if len(items) > 10:
             lines.append(f"  ... и ещё {len(items) - 10} позиций")
 

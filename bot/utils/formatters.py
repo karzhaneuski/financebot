@@ -82,14 +82,19 @@ def format_receipt_amount(receipt) -> str:
     return text
 
 
-def format_items_list(items: list[dict]) -> str:
+def format_items_list(items: list[dict], currency: str) -> str:
+    """Item lines of a receipt. Prices are in the receipt's own currency —
+    item dicts carry no currency of their own, so callers must pass the
+    receipt's (`currency` is deliberately required: defaulting it to PLN is
+    what made foreign-currency items render as "13.04 PLN").
+    """
     lines = []
     for item in items:
         name = item.get("name", "—")
         qty = item.get("quantity", 1)
         price = float(item.get("total_price", 0))
         qty_str = f" × {qty}" if qty != 1 else ""
-        lines.append(f"  • {name}{qty_str} — {price:.2f} PLN")
+        lines.append(f"  • {name}{qty_str} — {format_currency(price, currency)}")
     return "\n".join(lines)
 
 
