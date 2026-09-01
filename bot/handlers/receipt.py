@@ -104,26 +104,34 @@ async def handle_receipt_photo(message: Message, bot: Bot, session: AsyncSession
             cat_enum = Category(db_cat)
         except ValueError:
             cat_enum = Category.other
+
+        bank_currency = bank_tx["currency"]
+        bank_amount = float(bank_tx["amount"])
+        bank_total_pln = await convert_to_pln(bank_amount, bank_currency, redis)
+
         receipt = await create_receipt(
             session,
             user_id=message.from_user.id,
             data={
                 "store": bank_tx["merchant"],
                 "date": bank_tx["date"],
-                "currency": "PLN",
-                "total": bank_tx["amount_pln"],
+                "currency": bank_currency,
+                "total": bank_amount,
                 "items": [],
             },
             photo_file_id=photo.file_id,
-            total_pln=bank_tx["amount_pln"],
+            total_pln=bank_total_pln,
             source="screenshot",
             tx_type="purchase",
             category=cat_enum,
         )
         date_str = format_date_ru(bank_tx["date"])
+        amount_line = f"🏪 {bank_tx['merchant']} — {format_currency(bank_amount, bank_currency)}"
+        if bank_currency != "PLN":
+            amount_line += f" (≈ {format_pln(bank_total_pln)})"
         await status_msg.edit_text(
             f"✅ Транзакция сохранена!\n"
-            f"🏪 {bank_tx['merchant']} — {bank_tx['amount_pln']:.2f} PLN\n"
+            f"{amount_line}\n"
             f"📅 {date_str}\n"
             f"🏷 Категория: {display_cat}",
             reply_markup=recat_keyboard(receipt.id),

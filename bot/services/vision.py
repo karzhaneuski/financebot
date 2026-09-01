@@ -4,6 +4,7 @@ import logging
 import re
 import sys
 import traceback
+from datetime import date
 
 import anthropic
 
@@ -146,6 +147,35 @@ def _postprocess_items(items: list[dict]) -> list[dict]:
     return result
 
 
+def _infer_recent_year(date_str: str | None, today: date) -> str | None:
+    """Replace the year in a YYYY-MM-DD guess with the most recent occurrence
+    of that month/day on or before `today`.
+
+    Used when the screenshot only shows day+month — Claude's guessed year is
+    unreliable (it tends to default to a year near its training cutoff
+    instead of reasoning about the actual current date), so the year is
+    recomputed here instead of trusted from the model output.
+    """
+    if not date_str:
+        return None
+    try:
+        _, month_str, day_str = date_str.split("-")
+        month, day = int(month_str), int(day_str)
+    except (ValueError, AttributeError):
+        return date_str
+
+    year = today.year
+    try:
+        candidate = date(year, month, day)
+    except ValueError:
+        return date_str
+
+    if candidate > today:
+        year -= 1
+
+    return f"{year:04d}-{month:02d}-{day:02d}"
+
+
 def _extract_json(raw: str) -> str:
     """Strip markdown code fences if Claude wrapped the JSON despite instructions."""
     # Remove ```json ... ``` or ``` ... ``` wrappers
@@ -155,43 +185,56 @@ def _extract_json(raw: str) -> str:
     return raw.strip()
 
 
-_BANK_TX_SYSTEM = """You are an Erste Bank mobile app transaction screenshot parser.
+_BANK_TX_SYSTEM_TEMPLATE = """You are a bank/payment-app transaction screenshot parser (Erste Bank, Revolut, mobile wallets, etc.).
 
-Examine the image. If it shows an Erste Bank transaction detail screen — look for any of:
+Examine the image. If it shows a transaction detail screen — look for any of:
   "Szczegóły transakcji", "Data transakcji", or both "Odbiorca" and "Nadawca" fields —
 extract the transaction data and return a JSON object.
 
-If the image is NOT an Erste Bank transaction screen (shop receipt, other bank, other app), return: null
+If the image is NOT a bank/payment transaction screen (shop receipt, other app), return: null
 
 JSON format when it IS a transaction screen:
 {
   "merchant": "string — cleaned merchant name; remove trailing store numbers/codes, e.g. 'GRANDE BISTRO 89045' → 'Grande Bistro'",
-  "amount_pln": 0.00,
+  "amount": 0.00,
+  "currency": "PLN",
   "date": "YYYY-MM-DD",
+  "year_visible": true,
   "raw_title": "string or null — full Tytuł/Title field content if visible"
 }
 
 Rules:
 - merchant: prefer the Odbiorca field; if absent use the name at the top of the screen
-- amount_pln: absolute value (positive) of the PLN amount shown
+- amount: absolute value (positive) of the amount shown, in its ORIGINAL currency — do NOT convert it
+- currency: ISO 4217 code inferred from the currency symbol or explicit code shown on screen
+  (€ → EUR, $ → USD, zł/PLN → PLN, Kč → CZK, Br/BYN → BYN). If no currency indicator is visible
+  at all, default to PLN.
 - date: convert Polish month names — Stycznia=01 Lutego=02 Marca=03 Kwietnia=04 Maja=05 Czerwca=06 Lipca=07 Sierpnia=08 Września=09 Października=10 Listopada=11 Grudnia=12
+- year_visible: true only if an explicit year is printed on screen next to the date. If the
+  screen shows only day+month (e.g. "23 sie."), set year_visible=false and still fill "date"
+  with your best guess — the caller will correct the year deterministically.
+- Today's date is __TODAY__ — do not use a year from your training data.
 - Return ONLY valid JSON or the literal: null — no markdown, no code fences, no explanation"""
 
 
-async def parse_bank_transaction_screenshot(image_bytes: bytes) -> dict | None:
-    """Try to parse an Erste Bank transaction detail screenshot.
+async def parse_bank_transaction_screenshot(image_bytes: bytes, today: date | None = None) -> dict | None:
+    """Try to parse a bank/payment-app transaction detail screenshot.
 
-    Returns a dict with keys (merchant, amount_pln, date, raw_title) if the image
-    matches the Erste Bank transaction screen pattern, otherwise None.
+    Returns a dict with keys (merchant, amount, currency, date, raw_title) if the
+    image matches a transaction screen pattern, otherwise None. `amount` is the
+    raw amount in its original `currency` — callers must convert to PLN
+    themselves (see bot.services.currency.convert_to_pln).
     """
+    today = today or date.today()
     client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
     image_b64 = base64.standard_b64encode(image_bytes).decode("utf-8")
+    system_prompt = _BANK_TX_SYSTEM_TEMPLATE.replace("__TODAY__", today.isoformat())
 
     try:
         response = await client.messages.create(
             model="claude-sonnet-5",
             max_tokens=512,
-            system=_BANK_TX_SYSTEM,
+            system=system_prompt,
             messages=[
                 {
                     "role": "user",
@@ -231,11 +274,21 @@ async def parse_bank_transaction_screenshot(image_bytes: bytes) -> dict | None:
     if not isinstance(data, dict):
         return None
 
-    if not data.get("merchant") or data.get("amount_pln") is None or not data.get("date"):
+    if not data.get("merchant") or data.get("amount") is None or not data.get("date"):
         logger.warning("Bank screenshot parser missing required fields: %r", data)
         return None
 
-    return data
+    date_str = data.get("date")
+    if not data.get("year_visible", False):
+        date_str = _infer_recent_year(date_str, today) or date_str
+
+    return {
+        "merchant": data["merchant"],
+        "amount": data["amount"],
+        "currency": (data.get("currency") or "PLN").upper(),
+        "date": date_str,
+        "raw_title": data.get("raw_title"),
+    }
 
 
 async def parse_receipt(image_bytes: bytes) -> dict:

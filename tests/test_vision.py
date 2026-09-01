@@ -1,3 +1,5 @@
+from datetime import date
+
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -116,13 +118,21 @@ def test_biedronka_multiple_items_with_one_discount():
     assert result[2]["total_price"] == pytest.approx(7.49)
 
 
-@pytest.mark.asyncio
-async def test_parse_bank_transaction_screenshot_returns_dict():
-    payload = '{"merchant": "Grande Bistro", "amount_pln": 15.00, "date": "2026-05-29", "raw_title": "karta 421352******5046"}'
+def _mock_bank_tx_response(payload: str) -> MagicMock:
     mock_content = MagicMock()
     mock_content.text = payload
     mock_response = MagicMock()
     mock_response.content = [mock_content]
+    return mock_response
+
+
+@pytest.mark.asyncio
+async def test_parse_bank_transaction_screenshot_returns_dict():
+    payload = (
+        '{"merchant": "Grande Bistro", "amount": 15.00, "currency": "PLN", '
+        '"date": "2026-05-29", "year_visible": true, "raw_title": "karta 421352******5046"}'
+    )
+    mock_response = _mock_bank_tx_response(payload)
 
     with patch("bot.services.vision.anthropic.AsyncAnthropic") as MockClient:
         MockClient.return_value.messages.create = AsyncMock(return_value=mock_response)
@@ -130,8 +140,82 @@ async def test_parse_bank_transaction_screenshot_returns_dict():
 
     assert result is not None
     assert result["merchant"] == "Grande Bistro"
-    assert result["amount_pln"] == 15.00
+    assert result["amount"] == 15.00
+    assert result["currency"] == "PLN"
     assert result["date"] == "2026-05-29"
+
+
+@pytest.mark.asyncio
+async def test_parse_bank_transaction_screenshot_eur_amount():
+    """Revolut-style screen showing '-13,04 €' must be returned as EUR, not relabeled PLN."""
+    payload = (
+        '{"merchant": "Some Shop", "amount": 13.04, "currency": "EUR", '
+        '"date": "2026-08-30", "year_visible": true, "raw_title": null}'
+    )
+    mock_response = _mock_bank_tx_response(payload)
+
+    with patch("bot.services.vision.anthropic.AsyncAnthropic") as MockClient:
+        MockClient.return_value.messages.create = AsyncMock(return_value=mock_response)
+        result = await parse_bank_transaction_screenshot(b"fake image")
+
+    assert result is not None
+    assert result["currency"] == "EUR"
+    assert result["amount"] == 13.04
+
+
+@pytest.mark.asyncio
+async def test_parse_bank_transaction_screenshot_byn_amount():
+    """Erste/Wallet screen showing '13,35 BYN' must be returned as BYN, not relabeled PLN."""
+    payload = (
+        '{"merchant": "Some Shop", "amount": 13.35, "currency": "BYN", '
+        '"date": "2026-08-23", "year_visible": true, "raw_title": null}'
+    )
+    mock_response = _mock_bank_tx_response(payload)
+
+    with patch("bot.services.vision.anthropic.AsyncAnthropic") as MockClient:
+        MockClient.return_value.messages.create = AsyncMock(return_value=mock_response)
+        result = await parse_bank_transaction_screenshot(b"fake image")
+
+    assert result is not None
+    assert result["currency"] == "BYN"
+    assert result["amount"] == 13.35
+
+
+@pytest.mark.asyncio
+async def test_parse_bank_transaction_screenshot_yearless_date_defaults_correctly():
+    """A day+month-only date (no year visible) must resolve to the most recent
+    past occurrence relative to `today`, not whatever year Claude guessed."""
+    payload = (
+        '{"merchant": "Some Shop", "amount": 13.35, "currency": "BYN", '
+        '"date": "2025-08-23", "year_visible": false, "raw_title": null}'
+    )
+    mock_response = _mock_bank_tx_response(payload)
+
+    with patch("bot.services.vision.anthropic.AsyncAnthropic") as MockClient:
+        MockClient.return_value.messages.create = AsyncMock(return_value=mock_response)
+        result = await parse_bank_transaction_screenshot(b"fake image", today=date(2026, 9, 2))
+
+    assert result is not None
+    # Aug 23 already happened this year relative to Sep 2, so that's the most
+    # recent past occurrence — not Claude's stale 2025 guess.
+    assert result["date"] == "2026-08-23"
+
+
+@pytest.mark.asyncio
+async def test_parse_bank_transaction_screenshot_yearless_future_date_rolls_back():
+    """A day+month combo that hasn't happened yet this year rolls back to last year."""
+    payload = (
+        '{"merchant": "Some Shop", "amount": 5.00, "currency": "PLN", '
+        '"date": "2026-12-15", "year_visible": false, "raw_title": null}'
+    )
+    mock_response = _mock_bank_tx_response(payload)
+
+    with patch("bot.services.vision.anthropic.AsyncAnthropic") as MockClient:
+        MockClient.return_value.messages.create = AsyncMock(return_value=mock_response)
+        result = await parse_bank_transaction_screenshot(b"fake image", today=date(2026, 9, 2))
+
+    assert result is not None
+    assert result["date"] == "2025-12-15"
 
 
 @pytest.mark.asyncio
