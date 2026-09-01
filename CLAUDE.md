@@ -9,7 +9,7 @@ User sends a photo of a receipt → Claude Vision parses it → data is stored i
 - **Telegram framework**: aiogram 3.x (async)
 - **Database**: PostgreSQL 16 + SQLAlchemy 2 (async) + Alembic
 - **Cache / FSM state**: Redis 7
-- **AI parsing**: Anthropic Claude Vision API (`claude-sonnet-4-20250514`)
+- **AI parsing**: Anthropic Claude Vision API (`claude-sonnet-5`)
 - **Currency rates**: exchangerate-api.com (free tier, cached in Redis 1h)
 - **Charts**: matplotlib
 - **Excel export**: openpyxl

@@ -189,7 +189,7 @@ async def parse_bank_transaction_screenshot(image_bytes: bytes) -> dict | None:
 
     try:
         response = await client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-5",
             max_tokens=512,
             system=_BANK_TX_SYSTEM,
             messages=[
@@ -244,7 +244,7 @@ async def parse_receipt(image_bytes: bytes) -> dict:
 
     try:
         response = await client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-5",
             max_tokens=2048,
             system=SYSTEM_PROMPT,
             messages=[
