@@ -39,6 +39,7 @@ from bot.utils.formatters import (
     format_date_ru,
     format_items_list,
     format_pln,
+    format_receipt_amount,
 )
 
 logger = logging.getLogger(__name__)
@@ -126,12 +127,9 @@ async def handle_receipt_photo(message: Message, bot: Bot, session: AsyncSession
             category=cat_enum,
         )
         date_str = format_date_ru(bank_tx["date"])
-        amount_line = f"🏪 {bank_tx['merchant']} — {format_currency(bank_amount, bank_currency)}"
-        if bank_currency != "PLN":
-            amount_line += f" (≈ {format_pln(bank_total_pln)})"
         await status_msg.edit_text(
             f"✅ Транзакция сохранена!\n"
-            f"{amount_line}\n"
+            f"🏪 {bank_tx['merchant']} — {format_receipt_amount(receipt)}\n"
             f"📅 {date_str}\n"
             f"🏷 Категория: {display_cat}",
             reply_markup=recat_keyboard(receipt.id),
@@ -636,7 +634,7 @@ async def recat_set_callback(call: CallbackQuery, session: AsyncSession) -> None
         date_str = format_date_ru(receipt.date.isoformat() if receipt.date else None)
         text = (
             f"✅ Сохранено!\n"
-            f"🏪 {receipt.store or '?'} — {float(receipt.total):.2f} PLN\n"
+            f"🏪 {receipt.store or '?'} — {format_receipt_amount(receipt)}\n"
             f"📅 {date_str}\n"
             f"🏷 Категория: {cat_label} ✓"
         )

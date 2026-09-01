@@ -66,6 +66,22 @@ def currency_flag(currency: str) -> str:
     return CURRENCY_FLAGS.get(currency, "💱")
 
 
+def format_receipt_amount(receipt) -> str:
+    """Amount of a saved receipt: native sum, plus a PLN approximation when the
+    receipt isn't already in PLN.
+
+    Single source of truth for every confirmation message about one receipt
+    (initial save and post-/recat edit alike) — these used to be formatted
+    separately and drifted apart, showing the native amount under a "PLN"
+    label for foreign-currency receipts.
+    """
+    currency = receipt.currency or "PLN"
+    text = format_currency(float(receipt.total), currency)
+    if currency != "PLN":
+        text += f" (≈ {format_pln(float(receipt.total_pln))})"
+    return text
+
+
 def format_items_list(items: list[dict]) -> str:
     lines = []
     for item in items:
