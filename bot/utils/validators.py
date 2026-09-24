@@ -44,9 +44,9 @@ def validate_receipt(data: dict[str, Any]) -> dict[str, Any]:
         items_sum = sum(float(it["total_price"]) for it in cleaned_items)
         declared_total = float(result["total"])
         if abs(items_sum - declared_total) > 0.02:
-            logger.warning(
-                f"Расхождение итога: объявлено {declared_total}, сумма позиций {items_sum:.2f}"
-            )
+            # Amounts only at DEBUG: production logs must not carry spending data.
+            logger.warning("Receipt total mismatch: declared total differs from items sum")
+            logger.debug("Receipt total mismatch: declared %s, items sum %.2f", declared_total, items_sum)
             result["total_mismatch"] = True
 
     return result

@@ -55,3 +55,37 @@ async def test_fx_provider_exception_is_scrubbed(provider):
 
 def test_httpx_request_urls_not_logged_at_info():
     assert logging.getLogger("httpx").getEffectiveLevel() >= logging.WARNING
+
+
+# ── spending data stays out of INFO+ logs ───────────────────────────────────
+
+def _info_and_above(caplog) -> str:
+    return "\n".join(r.getMessage() for r in caplog.records if r.levelno >= logging.INFO)
+
+
+def test_total_mismatch_does_not_log_amounts(caplog):
+    from bot.utils.validators import validate_receipt
+    caplog.set_level(logging.DEBUG)
+    result = validate_receipt({
+        "store": "Lidl", "date": "2026-06-01", "currency": "PLN", "total": 987.65,
+        "items": [{"name": "Mleko", "quantity": 1, "unit_price": 12.34, "total_price": 12.34, "category": "groceries"}],
+    })
+    assert result["total_mismatch"] is True
+    assert "987.65" not in _info_and_above(caplog) and "12.34" not in _info_and_above(caplog)
+
+
+async def test_search_query_not_logged_above_debug(monkeypatch, caplog):
+    import bot.services.search_parser as sp
+
+    class _Boom:
+        def __init__(self, *a, **k):
+            pass
+
+        @property
+        def messages(self):
+            raise RuntimeError("no network")
+    monkeypatch.setattr(sp.anthropic, "AsyncAnthropic", _Boom)
+    caplog.set_level(logging.DEBUG)
+    await sp.parse_search_query("покупки дороже 4321 в Kaufland")
+    assert "4321" not in _info_and_above(caplog)
+    assert "Kaufland" not in _info_and_above(caplog)

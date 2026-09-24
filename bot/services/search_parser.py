@@ -156,8 +156,8 @@ async def parse_search_query(text: str, today: date | None = None) -> tuple[dict
         # Sanity-check LLM dates; fall back to regex parser on garbage.
         if parsed.get("date_from") and parsed.get("date_to") and parsed["date_from"] > parsed["date_to"]:
             raise ValueError("inverted range")
-        logger.info("search_query %r -> %s", text, parsed)
+        logger.debug("search_query %r -> %s", text, parsed)
         return parsed, False
     except Exception:
-        logger.warning("LLM search parse failed for %r, using fallback", text, exc_info=True)
+        logger.warning("LLM search parse failed, using fallback", exc_info=True)
         return _regex_parse(text, today), True

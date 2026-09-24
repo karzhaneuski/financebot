@@ -134,7 +134,6 @@ def _build_product_detail_text(
 
     if detail["total_spent"] == 0 and all_time:
         vol = all_time.get("total_volume_ml")
-        print(f"[DEBUG] _build_product_detail_text fallback: all_time vol={vol}")
         vol_str = f" · {_fmt_volume(vol)}" if vol is not None else ""
         lines = [
             f"🧃 *{display} — {label}*",
@@ -145,7 +144,6 @@ def _build_product_detail_text(
         return "\n".join(lines)
 
     total_vol = detail.get("total_volume_ml")
-    print(f"[DEBUG] _build_product_detail_text normal: total_vol={total_vol}")
     lines = [
         f"🥤 *{display} — {label}*",
         f"Всего потрачено: *{detail['total_spent']:.2f} PLN*",
@@ -371,12 +369,12 @@ async def _show_product_detail_edit(
     normalized_name: str,
 ) -> None:
     detail = await crud.get_product_detail(session, call.from_user.id, normalized_name, period)
-    logger.info("product_detail [%s/%s]: spent=%.2f qty=%.2f vol=%s",
+    logger.debug("product_detail [%s/%s]: spent=%.2f qty=%.2f vol=%s",
                 normalized_name, period, detail["total_spent"], detail["total_qty"], detail.get("total_volume_ml"))
     all_time = None
     if detail["total_spent"] == 0:
         all_time = await crud.get_product_detail(session, call.from_user.id, normalized_name, "all")
-        logger.info("product_detail [%s/all]: spent=%.2f qty=%.2f vol=%s",
+        logger.debug("product_detail [%s/all]: spent=%.2f qty=%.2f vol=%s",
                     normalized_name, all_time["total_spent"], all_time["total_qty"], all_time.get("total_volume_ml"))
     text = _build_product_detail_text(detail, normalized_name, PERIOD_LABEL_MAP[period], all_time=all_time)
     try:
@@ -426,12 +424,12 @@ async def product_search_handler(
 
     if len(matches) == 1:
         detail = await crud.get_product_detail(session, message.from_user.id, matches[0], period)
-        logger.info("search product_detail [%s/%s]: spent=%.2f qty=%.2f vol=%s",
+        logger.debug("search product_detail [%s/%s]: spent=%.2f qty=%.2f vol=%s",
                     matches[0], period, detail["total_spent"], detail["total_qty"], detail.get("total_volume_ml"))
         all_time = None
         if detail["total_spent"] == 0:
             all_time = await crud.get_product_detail(session, message.from_user.id, matches[0], "all")
-            logger.info("search product_detail [%s/all]: spent=%.2f qty=%.2f vol=%s",
+            logger.debug("search product_detail [%s/all]: spent=%.2f qty=%.2f vol=%s",
                         matches[0], all_time["total_spent"], all_time["total_qty"], all_time.get("total_volume_ml"))
         text = _build_product_detail_text(detail, matches[0], PERIOD_LABEL_MAP[period], all_time=all_time)
         await message.answer(text, parse_mode="Markdown", reply_markup=product_detail_keyboard(period))

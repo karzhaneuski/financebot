@@ -265,7 +265,8 @@ async def parse_bank_transaction_screenshot(image_bytes: bytes, today: date | No
     try:
         data = json.loads(json_text)
     except json.JSONDecodeError:
-        logger.warning("Bank screenshot parser returned invalid JSON: %r", raw_text)
+        logger.warning("Bank screenshot parser returned invalid JSON (%d chars)", len(raw_text))
+        logger.debug("Bank screenshot invalid JSON: %r", raw_text)
         return None
 
     if data is None:
@@ -275,7 +276,8 @@ async def parse_bank_transaction_screenshot(image_bytes: bytes, today: date | No
         return None
 
     if not data.get("merchant") or data.get("amount") is None or not data.get("date"):
-        logger.warning("Bank screenshot parser missing required fields: %r", data)
+        logger.warning("Bank screenshot parser missing required fields: %s",
+                       [k for k in ("merchant", "amount", "date") if not data.get(k) and data.get(k) != 0])
         return None
 
     date_str = data.get("date")
@@ -330,8 +332,9 @@ async def parse_receipt(image_bytes: bytes) -> dict:
     try:
         data = json.loads(json_text)
     except json.JSONDecodeError as e:
-        logger.error("Claude returned invalid JSON. Raw output: %r", raw_text)
-        print(f"Claude returned invalid JSON: {raw_text!r}", file=sys.stderr)
+        # The raw output is the receipt's content (items, amounts) — DEBUG only.
+        logger.error("Claude returned invalid JSON (%d chars)", len(raw_text))
+        logger.debug("Claude invalid JSON output: %r", raw_text)
         traceback.print_exc(file=sys.stderr)
         raise ValueError("Claude returned invalid JSON") from e
 
