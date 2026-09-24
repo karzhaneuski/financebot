@@ -26,10 +26,18 @@ def verify_telegram_init_data(init_data: str, bot_token: str) -> dict | None:
         return None
 
 
+def dev_token_accepted(authorization: str, settings) -> bool:
+    """The dev-token shortcut exists only in explicit development mode;
+    otherwise that auth path is disabled even if DEV_TOKEN is set."""
+    if not settings.DEV_MODE or not settings.DEV_TOKEN:
+        return False
+    return hmac.compare_digest(authorization, f"Bearer {settings.DEV_TOKEN}")
+
+
 async def get_current_user(authorization: str = Header()) -> int:
     from bot.config import settings
 
-    if settings.DEV_TOKEN and authorization == f"Bearer {settings.DEV_TOKEN}":
+    if dev_token_accepted(authorization, settings):
         return settings.DEV_USER_ID
 
     if not authorization.startswith("tma "):

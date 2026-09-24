@@ -7,6 +7,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     REDIS_URL: str
     EXCHANGE_API_KEY: str
+    # Local development only: with DEV_MODE=true the API also accepts
+    # "Bearer <DEV_TOKEN>" as DEV_USER_ID. Never set these in production.
+    DEV_MODE: bool = False
     DEV_TOKEN: str | None = None
     DEV_USER_ID: int = 0
 
