@@ -33,7 +33,7 @@ CATEGORY_NAME_RU = {
     "other": "Другое",
     "pharmacy": "Аптека",
     "electronics": "Электроника",
-    "household": "Жильё",
+    "household": "Дом/Быт",
 }
 
 
