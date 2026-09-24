@@ -14,3 +14,5 @@ venv/
 .env
 *.sqlite3
 .pytest_cache/
+financebot_dump.sql
+*.dump
