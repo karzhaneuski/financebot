@@ -1,6 +1,13 @@
 # Production stack for the Oracle Cloud server (Ubuntu 24.04, arm64).
 #   docker compose -f docker-compose.prod.yml --env-file .env up -d --build
-# See DEPLOY.md. Redis is external (Upstash, REDIS_URL in .env).
+# See DEPLOY.md.
+
+x-app-env: &app-env
+  # The DEV_TOKEN auth shortcut must never be active in production,
+  # whatever .env contains.
+  DEV_MODE: "false"
+  DEV_TOKEN: ""
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
 
 x-app: &app
   build:
@@ -9,11 +16,7 @@ x-app: &app
   image: financebot:prod
   platform: linux/arm64
   env_file: .env
-  environment:
-    # The DEV_TOKEN auth shortcut must never be active in production,
-    # whatever .env contains.
-    DEV_MODE: "false"
-    DEV_TOKEN: ""
+  environment: *app-env
   networks: [financebot]
   logging: &logging
     driver: json-file
@@ -45,6 +48,25 @@ services:
     logging: *logging
     # No ports: reachable only from the app containers.
 
+  redis:
+    # Cache and short-lived sessions only (FX rates, statement-import drafts,
+    # /split and list sessions — all with TTLs); nothing to migrate. AOF keeps
+    # them across restarts anyway.
+    image: redis:7-alpine
+    platform: linux/arm64
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [financebot]
+    logging: *logging
+    # No ports: reachable only from the app containers.
+
   migrate:
     <<: *app
     # One-shot: applies Alembic migrations, then exits. Not restarted.
@@ -58,11 +80,12 @@ services:
     <<: *app
     restart: unless-stopped
     environment:
+      <<: *app-env
       APP_ROLE: bot
-      DEV_MODE: "false"
-      DEV_TOKEN: ""
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
@@ -78,11 +101,12 @@ services:
     <<: *app
     restart: unless-stopped
     environment:
+      <<: *app-env
       APP_ROLE: api
-      DEV_MODE: "false"
-      DEV_TOKEN: ""
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
@@ -103,3 +127,5 @@ networks:
 volumes:
   pgdata:
     name: financebot_prod_pgdata
+  redisdata:
+    name: financebot_prod_redisdata

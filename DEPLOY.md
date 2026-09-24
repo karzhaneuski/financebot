@@ -11,15 +11,20 @@ Mini App (Cloudflare Pages) ──HTTPS──▶│  127.0.0.1:8000
                                       ▼
 ┌──────────── docker network "financebot" ────────────┐
 │ api  (APP_ROLE=api)  FastAPI, /healthz               │
-│ bot  (APP_ROLE=bot)  Telegram polling + scheduler    │──▶ Upstash Redis (REDIS_URL)
-│ migrate (one-shot)   alembic upgrade head            │──▶ Telegram, Anthropic, FX APIs
+│ bot  (APP_ROLE=bot)  Telegram polling + scheduler    │──▶ Telegram, Anthropic, FX APIs
+│ migrate (one-shot)   alembic upgrade head            │
 │ db   postgres:18     volume financebot_prod_pgdata   │
+│ redis redis:7-alpine volume financebot_prod_redisdata│
 └──────────────────────────────────────────────────────┘
 ```
 
 - PostgreSQL major version **18** — same as the Fly database the dump came from.
 - The API port is bound to `127.0.0.1` only; the internet reaches it solely
-  through Tailscale Funnel. PostgreSQL has no published port at all.
+  through Tailscale Funnel. PostgreSQL and Redis have no published ports.
+- Redis holds only a cache and short-lived sessions (FX rates, statement
+  import drafts, `/split` and list sessions — all with TTLs; FSM state is in
+  process memory). Nothing in it needs migrating or backing up; AOF
+  (`appendonly yes`) just keeps it across restarts.
 - The scheduler (daily/weekly/monthly reports, FX refresh) runs only in `bot`.
 - `DEV_MODE`/`DEV_TOKEN` are forced off by `docker-compose.prod.yml`.
 
@@ -58,7 +63,8 @@ Before filling `.env`:
   committed and logged).
 - **POSTGRES_*** — pick them now; `DATABASE_URL` must repeat them literally:
   `postgresql+asyncpg://<user>:<password>@db:5432/<db>`.
-- **REDIS_URL** — the Upstash `rediss://…` URL.
+- **REDIS_URL** — keep `redis://redis:6379/0` (the bundled `redis` service;
+  also the default when unset).
 - Leave `DEV_MODE`, `DEV_TOKEN`, `DEV_USER_ID` unset.
 
 ## 3. First start with data from the dump
@@ -84,7 +90,7 @@ to overwrite a database that already has tables unless given `--force`.
 
 ```bash
 dc up -d
-dc ps            # db/api/bot healthy, migrate "Exited (0)"
+dc ps            # db/redis/api/bot healthy, migrate "Exited (0)"
 curl -fsS http://127.0.0.1:8000/healthz     # {"status":"ok"}
 dc logs -f bot   # "Starting FinanceBot, role=bot" and polling started
 ```

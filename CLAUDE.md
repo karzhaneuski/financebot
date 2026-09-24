@@ -14,7 +14,7 @@ User sends a photo of a receipt → Claude Vision parses it → data is stored i
 - **Charts**: matplotlib
 - **Excel export**: openpyxl
 - **Config**: pydantic-settings + .env
-- **Deploy**: Docker Compose on an Oracle Cloud arm64 VM (`docker-compose.prod.yml`, see DEPLOY.md); Redis on Upstash
+- **Deploy**: Docker Compose on an Oracle Cloud arm64 VM (`docker-compose.prod.yml`, see DEPLOY.md); Redis as a compose service
 
 ## Project structure
 ```
@@ -174,7 +174,8 @@ Rules:
   process incl. `alembic upgrade head` (local development). **The scheduler
   must only run in the bot role** — otherwise reports are sent twice
   (`tests/test_app_roles.py`).
-- Production (`docker-compose.prod.yml`): `db` (postgres:18), one-shot
+- Production (`docker-compose.prod.yml`): `db` (postgres:18), `redis`
+  (redis:7-alpine, AOF, cache/sessions only — no data to migrate), one-shot
   `migrate`, `bot`, `api` on `127.0.0.1:8000` (public via Tailscale Funnel).
   `GET /healthz` (no auth) checks the DB. Details in DEPLOY.md.
 - The `DEV_TOKEN` auth shortcut works only with `DEV_MODE=true`; the prod
@@ -193,6 +194,6 @@ POSTGRES_USER=
 POSTGRES_PASSWORD=
 POSTGRES_DB=
 DATABASE_URL=postgresql+asyncpg://<user>:<password>@db:5432/<db>
-REDIS_URL=rediss://...        # Upstash
+REDIS_URL=redis://redis:6379/0   # bundled redis service (default)
 # local only: DEV_MODE=true, DEV_TOKEN=, DEV_USER_ID=
 ```
