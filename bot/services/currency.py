@@ -14,6 +14,10 @@ FX_CACHE_TTL = 25 * 3600
 FX_KEY = "fx_rate:{ccy}"
 
 
+class FxProviderError(Exception):
+    """Rate provider failure, with a message that is safe to log."""
+
+
 async def _fetch_rate_from_provider(from_currency: str, to_currency: str = "PLN") -> float:
     """One-off pair fetch from exchangerate-api.com.
 
@@ -22,10 +26,18 @@ async def _fetch_rate_from_provider(from_currency: str, to_currency: str = "PLN"
     and as the cold-start fallback before the scheduler's first run.
     """
     url = f"https://v6.exchangerate-api.com/v6/{settings.EXCHANGE_API_KEY}/pair/{from_currency}/{to_currency}"
-    async with httpx.AsyncClient(timeout=10) as client:
-        resp = await client.get(url)
-        resp.raise_for_status()
-        data = resp.json()
+    # The API key is part of the URL path and httpx puts the URL into its
+    # exception messages — re-raise without the URL (and without chaining)
+    # so the key never reaches the logs.
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            data = resp.json()
+    except httpx.HTTPStatusError as e:
+        raise FxProviderError(f"exchangerate-api.com returned HTTP {e.response.status_code}") from None
+    except httpx.HTTPError as e:
+        raise FxProviderError(f"exchangerate-api.com request failed: {type(e).__name__}") from None
     return float(data["conversion_rate"])
 
 

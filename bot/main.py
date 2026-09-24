@@ -20,6 +20,9 @@ from bot.scheduler import setup_scheduler
 from bot.middleware import DbSessionMiddleware, RedisMiddleware
 
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+# httpx logs every request URL at INFO; the exchangerate-api.com URL
+# contains the API key.
+logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 
