@@ -1,0 +1,105 @@
+# Production stack for the Oracle Cloud server (Ubuntu 24.04, arm64).
+#   docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+# See DEPLOY.md. Redis is external (Upstash, REDIS_URL in .env).
+
+x-app: &app
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: financebot:prod
+  platform: linux/arm64
+  env_file: .env
+  environment:
+    # The DEV_TOKEN auth shortcut must never be active in production,
+    # whatever .env contains.
+    DEV_MODE: "false"
+    DEV_TOKEN: ""
+  networks: [financebot]
+  logging: &logging
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
+
+services:
+  db:
+    # Same major version as the Fly.io database the dump comes from (18.x).
+    image: postgres:18
+    platform: linux/arm64
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env}
+    volumes:
+      # postgres:18 images keep data in /var/lib/postgresql/18/docker; the
+      # volume must be mounted at the parent directory.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks: [financebot]
+    logging: *logging
+    # No ports: reachable only from the app containers.
+
+  migrate:
+    <<: *app
+    # One-shot: applies Alembic migrations, then exits. Not restarted.
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  bot:
+    <<: *app
+    restart: unless-stopped
+    environment:
+      APP_ROLE: bot
+      DEV_MODE: "false"
+      DEV_TOKEN: ""
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      # The bot role touches this file every 30 s while its event loop runs.
+      test: ["CMD", "python", "-c", "import os,sys,time; sys.exit(time.time() - os.path.getmtime('/tmp/financebot-bot.heartbeat') > 120)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  api:
+    <<: *app
+    restart: unless-stopped
+    environment:
+      APP_ROLE: api
+      DEV_MODE: "false"
+      DEV_TOKEN: ""
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      # Loopback only; exposed to the internet through Tailscale Funnel.
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys,urllib.request; sys.exit(urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3).status != 200)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+networks:
+  financebot:
+    name: financebot
+
+volumes:
+  pgdata:
+    name: financebot_prod_pgdata

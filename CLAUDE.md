@@ -7,21 +7,25 @@ User sends a photo of a receipt → Claude Vision parses it → data is stored i
 ## Tech stack
 - **Language**: Python 3.12
 - **Telegram framework**: aiogram 3.x (async)
-- **Database**: PostgreSQL 16 + SQLAlchemy 2 (async) + Alembic
+- **Database**: PostgreSQL 18 + SQLAlchemy 2 (async) + Alembic
 - **Cache / FSM state**: Redis 7
 - **AI parsing**: Anthropic Claude Vision API (`claude-sonnet-5`)
 - **Currency rates**: exchangerate-api.com (free tier, cached in Redis 1h)
 - **Charts**: matplotlib
 - **Excel export**: openpyxl
 - **Config**: pydantic-settings + .env
-- **Deploy**: Docker Compose
+- **Deploy**: Docker Compose on an Oracle Cloud arm64 VM (`docker-compose.prod.yml`, see DEPLOY.md); Redis on Upstash
 
 ## Project structure
 ```
 financebot/
 ├── CLAUDE.md
 ├── .env.example
-├── docker-compose.yml
+├── docker-compose.yml       # local development
+├── docker-compose.prod.yml  # production (db, migrate, bot, api)
+├── DEPLOY.md
+├── scripts/                 # restore.sh, backup.sh
+├── deploy/cron/             # backup cron entry
 ├── Dockerfile
 ├── requirements.txt
 ├── alembic.ini
@@ -164,11 +168,31 @@ Rules:
   результаты могут быть неточными." to the results. Any future change to
   search must keep this fallback self-disclosed, not silent.
 
+## Process roles & production
+- `APP_ROLE` (`bot/main.py`): `bot` = Telegram polling + scheduler +
+  heartbeat file, `api` = FastAPI only, `all` (default) = everything in one
+  process incl. `alembic upgrade head` (local development). **The scheduler
+  must only run in the bot role** — otherwise reports are sent twice
+  (`tests/test_app_roles.py`).
+- Production (`docker-compose.prod.yml`): `db` (postgres:18), one-shot
+  `migrate`, `bot`, `api` on `127.0.0.1:8000` (public via Tailscale Funnel).
+  `GET /healthz` (no auth) checks the DB. Details in DEPLOY.md.
+- The `DEV_TOKEN` auth shortcut works only with `DEV_MODE=true`; the prod
+  compose forces it off.
+- Logs (stdout) must not contain amounts, receipt contents, search queries
+  or keys at INFO+ (`tests/test_log_hygiene.py`). The exchangerate-api key
+  is part of its URL, so httpx logs at WARNING and FX errors are scrubbed.
+
 ## Environment variables (.env)
+See `.env.example` (no values):
 ```
 BOT_TOKEN=
 ANTHROPIC_API_KEY=
-DATABASE_URL=postgresql+asyncpg://user:pass@db:5432/financebot
-REDIS_URL=redis://redis:6379/0
 EXCHANGE_API_KEY=
+POSTGRES_USER=
+POSTGRES_PASSWORD=
+POSTGRES_DB=
+DATABASE_URL=postgresql+asyncpg://<user>:<password>@db:5432/<db>
+REDIS_URL=rediss://...        # Upstash
+# local only: DEV_MODE=true, DEV_TOKEN=, DEV_USER_ID=
 ```

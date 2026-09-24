@@ -1,0 +1,7 @@
+# /etc/cron.d/financebot-backup — daily DB backup at 03:30 Europe/Warsaw.
+# Fires hourly at :30 because the server runs on UTC and Warsaw's offset
+# changes with DST; scripts/backup.sh only proceeds during the 03:xx hour
+# in Warsaw, so exactly one dump is taken per day.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+30 * * * * ubuntu /opt/financebot/scripts/backup.sh >> /var/log/financebot-backup.log 2>&1
