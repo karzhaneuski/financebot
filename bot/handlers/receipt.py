@@ -56,12 +56,23 @@ _ERSTE_KEY_TTL = 600  # 10 minutes
 _REVOLUT_KEY_TTL = 600  # 10 minutes
 
 
-def _pdf_first_page_to_jpeg(pdf_bytes: bytes) -> bytes:
-    """Render the first page of a PDF to JPEG bytes at 2× scale."""
+_PDF_MAX_PAGES = 5
+
+
+def _pdf_pages_to_jpeg(pdf_bytes: bytes, max_pages: int = _PDF_MAX_PAGES) -> list[bytes]:
+    """Render the PDF's pages (up to max_pages) to JPEG bytes at 2× scale.
+
+    All pages matter: on long e-receipts the "Suma PLN" total line can be on
+    a later page than the items. Rendering only the first page made the model
+    see no total at all.
+    """
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    page = doc[0]
-    pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
-    return pix.tobytes("jpeg")
+    if doc.page_count > max_pages:
+        logger.warning("PDF has %d pages, only the first %d are recognized", doc.page_count, max_pages)
+    return [
+        doc[i].get_pixmap(matrix=fitz.Matrix(2, 2)).tobytes("jpeg")
+        for i in range(min(doc.page_count, max_pages))
+    ]
 
 
 class ForeignMerchantStates(StatesGroup):
@@ -439,11 +450,11 @@ async def _handle_pdf_receipt(
     redis: aioredis.Redis,
     bot: Bot,
 ) -> None:
-    """Convert first PDF page to image and run through the receipt vision pipeline."""
+    """Render the PDF's pages to images and run them through the receipt vision pipeline."""
     await status_msg.edit_text("⏳ Конвертирую PDF в изображение...")
 
     try:
-        image_bytes = _pdf_first_page_to_jpeg(pdf_bytes)
+        image_bytes = _pdf_pages_to_jpeg(pdf_bytes)
     except Exception as e:
         logger.error(f"PDF render error: {e}", exc_info=True)
         await status_msg.edit_text("❌ Не удалось прочитать PDF. Попробуй другой файл.")

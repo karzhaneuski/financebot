@@ -291,7 +291,7 @@ async def test_pdf_receipt_shows_temporarily_unavailable_message(monkeypatch):
     async def _unavailable(*a, **k):
         raise LLMUnavailableError("gemini: HTTP 429")
     monkeypatch.setattr(rh, "parse_receipt", _unavailable)
-    monkeypatch.setattr(rh, "_pdf_first_page_to_jpeg", lambda b: b"jpeg")
+    monkeypatch.setattr(rh, "_pdf_pages_to_jpeg", lambda b: [b"jpeg"])
     status = _Status()
     await rh._handle_pdf_receipt(_Message(), status, b"%PDF", session=None, redis=None, bot=_Bot())
     assert status.texts[-1] == rh.VISION_UNAVAILABLE_TEXT

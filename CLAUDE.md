@@ -118,6 +118,12 @@ Rules:
 - Always use **async/await** everywhere (aiogram 3 is fully async)
 - All DB calls go through `crud.py` — no raw SQL in handlers
 - Parsed receipt JSON must be validated in `validators.py` before saving
+- Receipt total = the model's "Suma PLN" value. If it is null/0 while the
+  items sum is > 0, `validate_receipt` uses the items sum (warning logged,
+  `total_from_items=True`); if it differs from the items sum,
+  `total_mismatch=True` and the user sees the mismatch warning. Multi-page
+  PDF receipts send every page (up to 5) to the model — the total is often
+  on the last page.
 - Currency conversion: always store original currency + PLN equivalent
 - Redis TTL for currency rates: 3600 seconds
 - Never hardcode API keys — always read from `config.py` (pydantic-settings)

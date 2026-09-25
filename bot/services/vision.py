@@ -75,7 +75,6 @@ RECEIPT_SCHEMA = {
         "store": _NULLABLE_STR,
         "date": {"type": ["string", "null"], "description": "YYYY-MM-DD"},
         "currency": {"type": "string", "description": "ISO 4217 code, e.g. PLN"},
-        "total": _NULLABLE_NUM,
         "items": {
             "type": "array",
             "items": {
@@ -91,8 +90,16 @@ RECEIPT_SCHEMA = {
                 "required": ["name", "quantity", "unit_price", "total_price", "category", "deposit_type"],
             },
         },
+        # After "items" on purpose: Gemini emits keys in schema order, so the
+        # total is written once the whole receipt has been read — it sits at
+        # the bottom of the receipt.
+        "total": {
+            "type": ["number", "null"],
+            "description": 'Grand total from the "Suma PLN" / "SUMA" line at the bottom of the receipt '
+                           "(the amount paid), not a subtotal, tax or payment line. Null only if unreadable.",
+        },
     },
-    "required": ["store", "date", "currency", "total", "items"],
+    "required": ["store", "date", "currency", "items", "total"],
 }
 
 # The Claude prompt answers the literal `null` for "not a transaction screen";
@@ -313,7 +320,7 @@ async def parse_bank_transaction_screenshot(image_bytes: bytes, today: date | No
     }
 
 
-async def parse_receipt(image_bytes: bytes) -> dict:
+async def parse_receipt(image_bytes: bytes | list[bytes]) -> dict:
     """Parse a receipt photo into the validated receipt dict.
 
     Raises LLMUnavailableError when the provider is out of quota/balance or

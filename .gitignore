@@ -16,3 +16,6 @@ venv/
 .pytest_cache/
 financebot_dump.sql
 *.dump
+
+# Real receipts/statements for local debugging — never commit
+tests/fixtures/private/

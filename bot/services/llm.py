@@ -54,7 +54,7 @@ class LLMProvider(Protocol):
         prompt: str,
         schema: dict,
         tier: Tier,
-        image: bytes | None = None,
+        image: bytes | list[bytes] | None = None,
         max_tokens: int = 1024,
         schema_hint: str | None = None,
     ) -> Any:
@@ -62,8 +62,15 @@ class LLMProvider(Protocol):
         must follow (enforced natively by Gemini, described in the prompt for
         Claude). `schema_hint` is extra instruction for schema-enforcing
         providers only (e.g. how to express "not applicable" without a null
-        root)."""
+        root). `image` may be several JPEG pages of one document (multi-page
+        PDF receipts), sent in order."""
         ...
+
+
+def _images(image: bytes | list[bytes] | None) -> list[bytes]:
+    if image is None:
+        return []
+    return list(image) if isinstance(image, (list, tuple)) else [image]
 
 
 def _extract_json(raw: str) -> str:
@@ -109,18 +116,19 @@ class AnthropicProvider:
                             schema_hint=None):
         import base64
 
-        if image is not None:
+        pages = _images(image)
+        if pages:
             content: Any = [
                 {
                     "type": "image",
                     "source": {
                         "type": "base64",
                         "media_type": "image/jpeg",
-                        "data": base64.standard_b64encode(image).decode("utf-8"),
+                        "data": base64.standard_b64encode(page).decode("utf-8"),
                     },
-                },
-                {"type": "text", "text": prompt},
-            ]
+                }
+                for page in pages
+            ] + [{"type": "text", "text": prompt}]
         else:
             content = prompt
         try:
@@ -161,9 +169,9 @@ class GeminiProvider:
     async def generate_json(self, *, system, prompt, schema, tier, image=None, max_tokens=1024,
                             schema_hint=None):
         types = self._types
-        contents: list[Any] = []
-        if image is not None:
-            contents.append(types.Part.from_bytes(data=image, mime_type="image/jpeg"))
+        contents: list[Any] = [
+            types.Part.from_bytes(data=page, mime_type="image/jpeg") for page in _images(image)
+        ]
         contents.append(prompt)
         instruction = system if not schema_hint else f"{system}\n\n{schema_hint}"
         # max_tokens is deliberately not forwarded: on thinking models the
