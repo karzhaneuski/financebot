@@ -154,7 +154,7 @@ async def test_pdf_sends_every_page_and_saves_the_suma_total(gemini, db_session)
     receipt, items = await _saved(db_session, 101)
     assert float(receipt.total) == ITEMS_SUM and float(receipt.total_pln) == ITEMS_SUM
     assert len(items) == 3
-    assert f"Итого: {ITEMS_SUM:.2f} zł".replace(".", ",") in status.texts[-1]
+    assert f"Итого: {ITEMS_SUM:.2f} PLN".replace(".", ",") in status.texts[-1]
     assert MISMATCH_WARNING not in status.texts[-1]
 
 
@@ -167,7 +167,7 @@ async def test_pdf_zero_total_falls_back_to_items_sum(gemini, db_session):  # no
 
     receipt, _ = await _saved(db_session, 102)
     assert float(receipt.total) == ITEMS_SUM and float(receipt.total_pln) == ITEMS_SUM
-    assert f"Итого: {ITEMS_SUM:.2f} zł".replace(".", ",") in status.texts[-1]
+    assert f"Итого: {ITEMS_SUM:.2f} PLN".replace(".", ",") in status.texts[-1]
 
 
 def test_pdf_render_caps_pages():
@@ -203,7 +203,7 @@ async def test_photo_totals(gemini, db_session, user_id, model_total, saved_tota
     assert float(receipt.total) == pytest.approx(saved_total)
     assert float(receipt.total_pln) == pytest.approx(saved_total)
     preview = message.status.texts[-1]
-    assert f"Итого: {saved_total:.2f} zł".replace(".", ",") in preview
+    assert f"Итого: {saved_total:.2f} PLN".replace(".", ",") in preview
     assert (MISMATCH_WARNING in preview) is warns
     # Normalization applied: stored names normalized, preview shows raw names.
     assert {i.normalized_name for i in items} == {i["name"].title().lower() for i in ITEMS}

@@ -9,15 +9,6 @@ from bot.categories import category_label
 from bot.i18n import _, current_language
 from bot.markers import display_name
 
-CURRENCY_SYMBOLS = {
-    "PLN": "zł",
-    "EUR": "€",
-    "USD": "$",
-    "CZK": "Kč",
-    "BYR": "Br",
-    "BYN": "Br",
-}
-
 CURRENCY_FLAGS = {
     "PLN": "🇵🇱",
     "USD": "🇺🇸",
@@ -81,8 +72,9 @@ def format_number(amount: float, decimals: int = 2) -> str:
 
 
 def format_currency(amount: float, currency: str) -> str:
-    symbol = CURRENCY_SYMBOLS.get(currency, currency)
-    return f"{format_number(amount)} {symbol}"
+    """Amount followed by the ISO currency code ('1 234,50 PLN', '12,99 EUR'),
+    the same shape the Mini App uses."""
+    return f"{format_number(amount)} {currency}"
 
 
 def currency_flag(currency: str) -> str:
@@ -128,7 +120,7 @@ def format_amount(amount: float, currency: str = "PLN") -> str:
 
 
 def format_pln(amount: float) -> str:
-    return f"{format_number(amount)} zł"
+    return format_currency(amount, "PLN")
 
 
 def format_date(d: Optional[date | datetime | str]) -> str:
