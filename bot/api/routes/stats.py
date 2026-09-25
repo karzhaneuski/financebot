@@ -5,9 +5,11 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.api.auth import get_current_user
-from bot.api.categories import CATEGORY_META
-from bot.api.deps import get_db
+from bot.api.categories import category_meta
+from bot.api.deps import get_db, get_user_language
 from bot.db import crud
+from bot.i18n import i18n
+from bot.markers import display_name
 
 router = APIRouter()
 
@@ -50,6 +52,7 @@ async def stats_by_category(
     period: str = Query("month"),
     user_id: int = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    language: str = Depends(get_user_language),
 ):
     date_from, date_to = _period_range(period)
     rows = await crud.get_spending_by_category_range(db, user_id, date_from, date_to)
@@ -58,7 +61,7 @@ async def stats_by_category(
     categories = []
     for r in rows:
         cat = r["category"]
-        name, emoji = CATEGORY_META.get(cat, (cat, "📦"))
+        name, emoji = category_meta(cat, language)
         amount = round(r["total_pln"], 2)
         categories.append({
             "category": cat,
@@ -109,12 +112,14 @@ async def stats_top_stores(
     limit: int = Query(5, ge=1, le=50),
     user_id: int = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    language: str = Depends(get_user_language),
 ):
     date_from, date_to = _period_range(period)
     rows = await crud.get_spending_by_store_range(db, user_id, date_from, date_to)
 
-    stores = [
-        {"store": r["store"], "amount": round(r["total_pln"], 2), "count": r["visits"]}
-        for r in rows[:limit]
-    ]
+    with i18n.use_locale(language):
+        stores = [
+            {"store": display_name(r["store"]), "amount": round(r["total_pln"], 2), "count": r["visits"]}
+            for r in rows[:limit]
+        ]
     return {"stores": stores}

@@ -76,6 +76,7 @@ receipts: id, user_id, store, date, currency, total, total_pln, personal_total_p
 items: id, receipt_id, name, normalized_name, quantity, unit_price, total_price,
        category, volume_ml, is_personal
 budgets: id, user_id, category, limit_pln, month (YYYY-MM), last_notified_pct
+users: user_id (PK, Telegram id), language (ru|en|pl), created_at
 ```
 `receipts.personal_total_pln` and `items.is_personal` are both nullable —
 NULL means "never split", which must behave exactly like the pre-/split
@@ -127,13 +128,16 @@ Rules:
 - Currency conversion: always store original currency + PLN equivalent
 - Redis TTL for currency rates: 3600 seconds
 - Never hardcode API keys — always read from `config.py` (pydantic-settings)
-- All error responses to user must be friendly Russian text
+- All user-facing text goes through gettext (`from bot.i18n import _, __, ngettext`);
+  error responses must be friendly text in the user's language
+- Category names come only from `bot.categories.category_label()`; store
+  categories as enum keys, never as translated names
 - Log all vision provider errors to stderr with full traceback
 - LLM calls go through `bot.services.llm.get_provider().generate_json()`
   with a JSON schema matching the prompt's format; never call an SDK
   directly. Quota/balance/rate-limit/outage errors raise
-  `LLMUnavailableError` → users see `VISION_UNAVAILABLE_TEXT`
-  (bot/handlers/receipt.py), not a generic error
+  `LLMUnavailableError` → users see `vision_unavailable_text()`
+  (bot/handlers/receipt.py, gettext), not a generic error
 
 ## Bot commands
 ```
@@ -148,6 +152,7 @@ Rules:
 /search, /find  — natural-language transaction search (Haiku parser + fallback)
 /wrapped        — year-in-review summary image
 /split          — split a receipt's items between personal/not-personal
+/language       — change the bot language (ru / en / pl)
 /cancel         — cancel current operation
 /reset          — reset FSM state (requires "confirm" arg)
 ```
@@ -171,12 +176,46 @@ Rules:
 - Product-stats functions and Excel export stay household-level by design —
   `is_personal` deliberately does not filter them.
 
+## Localization (i18n)
+- gettext catalogs in `bot/locales/<lang>/LC_MESSAGES/messages.po`; msgids
+  are the English texts. Workflow (commit both .po and .mo — a test checks
+  the .mo matches the .po):
+  ```
+  pybabel extract -F babel.cfg -k __ --no-location --sort-output -o bot/locales/messages.pot .
+  pybabel update -i bot/locales/messages.pot -d bot/locales -D messages
+  pybabel compile -d bot/locales -D messages
+  ```
+- Language resolution (`crud.get_or_create_user_language`): stored
+  `users.language`, else Russian for anyone with rows in receipts / budgets /
+  report_settings (pre-localization users; migration 011 backfills them),
+  else the Telegram `language_code` if supported, else English.
+- `UserLocaleMiddleware` sets the language per update; code outside an
+  update (scheduler, API) must wrap work in `i18n.use_locale(lang)`
+  (`crud.resolve_user_language` for scheduled sends).
+- Never assign to `_` (e.g. `_, x = data.split(":")`) in a module that
+  imports gettext's `_` — it shadows the function.
+- Keep `%` out of msgids (pass `"83%"` as the placeholder value): Babel
+  flags `% o`/`% s` sequences as printf format and rejects the catalog.
+- Bot-generated store/item names are stored as language-neutral markers
+  (`bot.markers`, e.g. `@cash_withdrawal`) and translated with
+  `markers.display_name()`. Pre-localization rows keep their Russian text;
+  `markers.canonical_sql()` maps them to the marker in GROUP BY so old and
+  new rows aggregate together.
+- Dates use Babel/CLDR month names via `bot.utils.formatters`
+  (`format_day_month_year`, `format_month_year`, ...).
+- `tests/test_i18n_snapshots.py` records every user-visible string per
+  language; regenerate with `UPDATE_SNAPSHOTS=1` and review the diff.
+- Mini App: strings in `miniapp/src/i18n/messages.ts`, language from
+  `GET /api/me`; category names come localized from the API.
+
 ## Known limitations
 - **Miniapp native vs. PLN**: `/api/transactions/recent` returns `amount`
   (personal PLN share via `Receipt.personal_amount()`) next to
   `original_amount` (the full native-currency `total`, *not* scaled by the
   split share). For a split receipt these two figures are not proportional —
   don't assume `original_amount` reflects only the personal portion.
+- **`/search` understands Russian only** (Haiku prompt and regex fallback);
+  EN/PL query rules are a separate follow-up.
 - **`/search` fallback honesty**: when the Haiku query parser
   (`search_parser.parse_search_query`) fails, `/search` falls back to a
   regex parser and appends "⚠️ Поиск выполнен по упрощённым правилам —

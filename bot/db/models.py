@@ -104,3 +104,17 @@ class ReportSettings(Base):
 
     def __repr__(self) -> str:
         return f"<ReportSettings user_id={self.user_id} daily={self.daily_enabled} weekly={self.weekly_enabled} monthly={self.monthly_enabled}>"
+
+
+class User(Base):
+    """Per-user settings. A row is created on the user's first update;
+    migration 011 backfills every pre-existing user with language "ru"."""
+
+    __tablename__ = "users"
+
+    user_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
+    language: Mapped[str] = mapped_column(String(8), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    def __repr__(self) -> str:
+        return f"<User user_id={self.user_id} language={self.language}>"

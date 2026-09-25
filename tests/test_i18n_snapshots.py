@@ -455,7 +455,7 @@ async def sc_excel(c):
 
 async def sc_formatters(c):
     from bot.utils import formatters as f
-    c.ret([f.format_date_ru("2026-03-08"), f.format_date_ru(None), f.format_date_ru("garbage"),
+    c.ret([f.format_date_str("2026-03-08"), f.format_date_str(None), f.format_date_str("garbage"),
            f.format_date(None), f.format_date(dt.date(2026, 12, 1)), f.format_month("2026-02"),
            f.format_category("household"), f.format_category("unknown")])
 
@@ -493,10 +493,14 @@ async def sc_keyboards(c):
 
 
 async def sc_api(c):
-    from bot.api.routes import budgets, stats, transactions
-    c.ret(await transactions.recent_transactions(limit=20, user_id=U, db=c.session))
-    c.ret(await stats.stats_by_category(period="month", user_id=U, db=c.session))
-    c.ret(await budgets.get_budgets(user_id=U, db=c.session))
+    from bot.api.routes import budgets, me, stats, transactions
+    from bot.db import crud
+    language = await crud.get_or_create_user_language(c.session, U, "en")
+    c.ret(await me.me(user_id=U, language=language))
+    c.ret(await transactions.recent_transactions(limit=20, user_id=U, db=c.session, language=language))
+    c.ret(await stats.stats_by_category(period="month", user_id=U, db=c.session, language=language))
+    c.ret(await stats.stats_top_stores(period="month", limit=5, user_id=U, db=c.session, language=language))
+    c.ret(await budgets.get_budgets(user_id=U, db=c.session, language=language))
 
 
 class FakeProvider:
@@ -586,7 +590,11 @@ SCENARIOS = {name[3:]: fn for name, fn in sorted(globals().items()) if name.star
 
 # ── runner ───────────────────────────────────────────────────────────────────
 
-async def run_all(db_session, monkeypatch) -> dict[str, list]:
+async def run_all(db_session, monkeypatch, lang: str) -> dict[str, list]:
+    """Run every scenario. Direct service/keyboard calls run in `lang`; updates
+    fed through the dispatcher get their language from the locale middleware."""
+    from bot.i18n import i18n
+
     h.install_figure_spy(monkeypatch)
     bot = h.make_bot()
     dp, redis = h.get_dispatcher(fakeredis.aioredis.FakeRedis)
@@ -598,7 +606,7 @@ async def run_all(db_session, monkeypatch) -> dict[str, list]:
         dp.fsm.storage.storage.clear()
         ids = await seed(db_session)
         h.RECORDER.take()
-        with monkeypatch.context() as mp:
+        with monkeypatch.context() as mp, i18n.use_locale(lang):
             await scenario(Ctx(db_session, redis, bot, dp, ids, mp))
         results[name] = h.RECORDER.take()
     return results
@@ -629,4 +637,4 @@ def _check(lang: str, results: dict[str, list]) -> None:
 
 @freeze_time(FROZEN_NOW)
 async def test_ru_snapshots(db_session, monkeypatch):
-    _check("ru", await run_all(db_session, monkeypatch))
+    _check("ru", await run_all(db_session, monkeypatch, "ru"))

@@ -3,6 +3,7 @@ import logging
 
 import fitz  # pymupdf
 
+from bot import markers
 from bot.services.categorization import categorize
 
 logger = logging.getLogger(__name__)
@@ -153,15 +154,15 @@ def _parse_block(date_str: str, lines: list[str]) -> dict | None:
     if tytul:
         tytul_upper = tytul.upper()
         if "BANKOMAT" in tytul_upper:
-            description = "Снятие наличных"
+            description = markers.CASH_WITHDRAWAL
         elif "WPŁATOMACIE" in tytul_upper:
-            description = "Пополнение наличными"
+            description = markers.CASH_DEPOSIT
         elif raw_type in ("OBCIĄŻENIE", "PRZELEW EXPRESS ELIXIR") and (
             "AKADEMIKU" in tytul_upper or "ZAMIESZKANIE" in tytul_upper
         ):
-            description = "Академик"
+            description = markers.AKADEMIK
         elif raw_type == "OBCIĄŻENIE" and _PRZELEW_ONLY_RE.match(tytul.strip()):
-            description = "Перевод"
+            description = markers.TRANSFER
         else:
             conv_match = _CURRENCY_CONV_RE.search(tytul)
             if conv_match:
@@ -188,7 +189,7 @@ def _parse_block(date_str: str, lines: list[str]) -> dict | None:
     # UZNANIE is always income; for everything else use the sign of the amount
     if raw_type == "UZNANIE":
         tx_type = "income"
-    elif description == "Снятие наличных":
+    elif description == markers.CASH_WITHDRAWAL:
         tx_type = "cash_withdrawal"
     else:
         tx_type = "income" if amount > 0 else "expense"

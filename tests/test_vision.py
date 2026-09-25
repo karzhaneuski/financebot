@@ -29,13 +29,13 @@ def test_validate_receipt_valid():
 
 
 def test_validate_receipt_missing_keys():
-    with pytest.raises(ValueError, match="обязательные поля"):
+    with pytest.raises(ValueError, match="required fields"):
         validate_receipt({"store": "Test"})
 
 
 def test_validate_receipt_empty_items():
     data = {**VALID_RECEIPT, "items": []}
-    with pytest.raises(ValueError, match="непустым списком"):
+    with pytest.raises(ValueError, match="non-empty list"):
         validate_receipt(data)
 
 

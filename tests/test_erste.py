@@ -1,5 +1,6 @@
 """Tests for the three Erste Bank parser fixes."""
 
+from bot import markers
 import pytest
 
 from bot.parsers.erste import (
@@ -51,7 +52,7 @@ class TestHousingCategory:
     def test_unknown_falls_back_to_other(self):
         db_cat, display = categorize("SomeRandomStore")
         assert db_cat == "other"
-        assert display == "Другое"
+        assert display == "Прочее"
 
 
 # ---------------------------------------------------------------------------
@@ -137,7 +138,7 @@ class TestCashWithdrawal:
 
     def test_cash_withdrawal_description(self):
         tx = _parse_block("2025-05-15", _make_cash_withdrawal_block())
-        assert tx["description"] == "Снятие наличных"
+        assert tx["description"] == markers.CASH_WITHDRAWAL
 
     def test_regular_expense_is_not_cash_withdrawal(self):
         tx = _parse_block("2025-05-15", _make_regular_expense_block())

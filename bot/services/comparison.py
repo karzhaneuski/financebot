@@ -4,7 +4,10 @@ from datetime import date, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.db import crud
-from bot.utils.formatters import MONTHS_NOMINATIVE
+from bot.categories import category_label
+from bot.i18n import _
+from bot.markers import display_name
+from bot.utils.formatters import month_name
 
 CATEGORY_EMOJI = {
     "groceries": "🛒",
@@ -21,20 +24,6 @@ CATEGORY_EMOJI = {
     "household": "🏠",
 }
 
-CATEGORY_NAME_RU = {
-    "groceries": "Продукты",
-    "housing": "Жильё",
-    "transport": "Транспорт",
-    "cafe": "Кафе/Рестораны",
-    "entertainment": "Развлечения",
-    "health": "Здоровье",
-    "clothing": "Одежда",
-    "subscriptions": "Подписки",
-    "other": "Другое",
-    "pharmacy": "Аптека",
-    "electronics": "Электроника",
-    "household": "Дом/Быт",
-}
 
 
 def _period_dates(
@@ -62,8 +51,8 @@ def _period_dates(
             py, pm = y, m - 1
         prev_start = date(py, pm, 1)
         prev_end = date(py, pm, monthrange(py, pm)[1])
-        curr_label = MONTHS_NOMINATIVE[m - 1].capitalize()
-        prev_label = MONTHS_NOMINATIVE[pm - 1].capitalize()
+        curr_label = month_name(m).capitalize()
+        prev_label = month_name(pm).capitalize()
         if y != py:
             curr_label = f"{curr_label} {y}"
             prev_label = f"{prev_label} {py}"
@@ -100,7 +89,7 @@ def _diff_line(curr: float, prev: float) -> str:
         pct_sign = "+" if pct >= 0 else ""
         pct_str = f" ({pct_sign}{pct:.0f}%)"
     arrow = _arrow(curr, prev)
-    return f"   Разница: {sign}{diff:.2f} PLN{pct_str} {arrow}"
+    return "   " + _("Difference: {diff} PLN").format(diff=f"{sign}{diff:.2f}") + f"{pct_str} {arrow}"
 
 
 def _budget_bar(spent: float, limit: float) -> str:
@@ -136,16 +125,16 @@ async def build_comparison_report(
     if budgets:
         budget_spending = await crud.get_monthly_spending_by_category(session, user_id, curr_month_str)
 
-    lines = [f"🔄 *Сравнение — {curr_label} vs {prev_label}*\n"]
+    lines = [_("🔄 *Comparison — {current} vs {previous}*").format(current=curr_label, previous=prev_label) + "\n"]
 
-    lines.append("💸 *Расходы:*")
+    lines.append(_("💸 *Expenses:*"))
     lines.append(f"   {curr_label}:  {curr_exp:.2f} PLN")
     lines.append(f"   {prev_label}: {prev_exp:.2f} PLN")
     lines.append(_diff_line(curr_exp, prev_exp))
 
     if curr_inc > 0 or prev_inc > 0:
         lines.append("")
-        lines.append("💰 *Доходы:*")
+        lines.append(_("💰 *Income:*"))
         lines.append(f"   {curr_label}:  {curr_inc:.2f} PLN")
         lines.append(f"   {prev_label}: {prev_inc:.2f} PLN")
         lines.append(_diff_line(curr_inc, prev_inc))
@@ -157,12 +146,12 @@ async def build_comparison_report(
     )
     if all_cats:
         lines.append("")
-        lines.append("📂 *По категориям:*")
+        lines.append(_("📂 *By category:*"))
         for cat in all_cats:
             cv = curr_cats.get(cat, 0.0)
             pv = prev_cats.get(cat, 0.0)
             emoji = CATEGORY_EMOJI.get(cat, "📦")
-            name = CATEGORY_NAME_RU.get(cat, cat)
+            name = category_label(cat)
             arrow = _arrow(cv, pv)
             if pv == 0:
                 pct_str = ""
@@ -179,18 +168,18 @@ async def build_comparison_report(
     max_rows = max(len(curr_top), len(prev_top), 0)
     if max_rows > 0:
         lines.append("")
-        lines.append("🏪 *Топ магазинов:*")
+        lines.append(_("🏪 *Top stores:*"))
         lines.append(f"   *{curr_label}* | *{prev_label}*")
         for i in range(max_rows):
             c = curr_top[i] if i < len(curr_top) else None
             p = prev_top[i] if i < len(prev_top) else None
-            c_str = f"{i+1}. {c['store'][:14]} {c['total_pln']:.0f} PLN" if c else ""
-            p_str = f"{i+1}. {p['store'][:14]} {p['total_pln']:.0f} PLN" if p else ""
+            c_str = f"{i+1}. {display_name(c['store'])[:14]} {c['total_pln']:.0f} PLN" if c else ""
+            p_str = f"{i+1}. {display_name(p['store'])[:14]} {p['total_pln']:.0f} PLN" if p else ""
             lines.append(f"   {c_str}  |  {p_str}")
 
     if budgets:
         lines.append("")
-        lines.append("📋 *Бюджеты (текущий месяц):*")
+        lines.append(_("📋 *Budgets (current month):*"))
         for b in budgets:
             cat = b.category.value
             spent = budget_spending.get(cat, 0.0)
@@ -198,7 +187,7 @@ async def build_comparison_report(
             pct = spent / limit * 100 if limit > 0 else 0
             bar = _budget_bar(spent, limit)
             emoji = CATEGORY_EMOJI.get(cat, "📦")
-            name = CATEGORY_NAME_RU.get(cat, cat)
+            name = category_label(cat)
             status = "🚨" if pct >= 100 else "⚠️" if pct >= 80 else ""
             lines.append(f"   {emoji} {name}  {spent:.0f} / {limit:.0f} PLN  {bar}  {pct:.0f}%{' ' + status if status else ''}")
 

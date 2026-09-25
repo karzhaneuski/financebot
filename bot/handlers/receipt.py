@@ -18,8 +18,8 @@ from bot.db.crud import (
     update_receipt_store,
 )
 from bot.db.models import Category
+from bot.i18n import _, ngettext
 from bot.keyboards.inline import (
-    CATEGORY_LABEL,
     erste_save_keyboard,
     recat_categories_keyboard,
     recat_keyboard,
@@ -36,21 +36,25 @@ from bot.services.vision import parse_bank_transaction_screenshot, parse_receipt
 from bot.utils.formatters import (
     currency_flag,
     format_category,
-    format_date_ru,
+    format_date_str,
     format_items_list,
     format_receipt_amount,
 )
+from bot.keyboards.inline import picker_label
+from bot.markers import display_name
 
 logger = logging.getLogger(__name__)
 router = Router()
 
 # Shown when the vision provider is out of quota/balance or down — the user
-# can still record the expense without image recognition.
-VISION_UNAVAILABLE_TEXT = (
-    "⏳ Распознавание чеков временно недоступно. "
-    "Можно добавить трату вручную командой /add "
-    "или загрузить выписку банка (Erste PDF или Revolut CSV)."
-)
+# can still record the expense without image recognition. A function (not a
+# module-level constant) so gettext picks the caller's current locale.
+def vision_unavailable_text() -> str:
+    return _(
+        "⏳ Receipt recognition is temporarily unavailable. "
+        "You can add the expense manually with /add "
+        "or upload a bank statement (Erste PDF or Revolut CSV)."
+    )
 
 _ERSTE_KEY_TTL = 600  # 10 minutes
 _REVOLUT_KEY_TTL = 600  # 10 minutes
@@ -88,17 +92,22 @@ def _revolut_redis_key(user_id: int) -> str:
 
 
 def _format_anomaly_alert(receipt, category_display: str, anomaly: dict) -> str:
-    return (
-        "⚠️ *Необычная трата*\n"
-        f"{float(receipt.total_pln):.2f} PLN в {receipt.store or '?'} — это в "
-        f"{anomaly['multiplier']:.1f} раза больше среднего чека в категории «{category_display}» "
-        f"(обычно ~{anomaly['category_avg']:.0f} PLN)"
+    return _(
+        "⚠️ *Unusual expense*\n"
+        "{amount} PLN at {store} — that's {multiplier}× the average receipt in the "
+        "“{category}” category (usually ~{average} PLN)"
+    ).format(
+        amount=f"{float(receipt.total_pln):.2f}",
+        store=display_name(receipt.store) or "?",
+        multiplier=f"{anomaly['multiplier']:.1f}",
+        category=category_display,
+        average=f"{anomaly['category_avg']:.0f}",
     )
 
 
 @router.message(F.photo)
 async def handle_receipt_photo(message: Message, bot: Bot, session: AsyncSession, redis: aioredis.Redis) -> None:
-    status_msg = await message.answer("⏳ Обрабатываю чек...")
+    status_msg = await message.answer(_("⏳ Processing the receipt..."))
 
     try:
         photo = message.photo[-1]
@@ -107,7 +116,7 @@ async def handle_receipt_photo(message: Message, bot: Bot, session: AsyncSession
         image_bytes = buf.getvalue()
     except Exception as e:
         logger.error(f"Failed to download photo: {e}", exc_info=True)
-        await status_msg.edit_text("❌ Не удалось загрузить фото. Попробуй ещё раз.")
+        await status_msg.edit_text(_("❌ Couldn't download the photo. Please try again."))
         return
 
     # Try Erste Bank transaction screenshot detection first.
@@ -116,7 +125,7 @@ async def handle_receipt_photo(message: Message, bot: Bot, session: AsyncSession
     except LLMUnavailableError as e:
         # The receipt parser uses the same provider — no point falling back.
         logger.warning(f"Vision provider unavailable: {e}")
-        await status_msg.edit_text(VISION_UNAVAILABLE_TEXT)
+        await status_msg.edit_text(vision_unavailable_text())
         return
     except Exception as e:
         logger.warning(f"Bank screenshot detection failed, falling back to receipt parser: {e}")
@@ -149,12 +158,12 @@ async def handle_receipt_photo(message: Message, bot: Bot, session: AsyncSession
             tx_type="purchase",
             category=cat_enum,
         )
-        date_str = format_date_ru(bank_tx["date"])
+        date_str = format_date_str(bank_tx["date"])
         await status_msg.edit_text(
-            f"✅ Транзакция сохранена!\n"
+            _("✅ Transaction saved!") + "\n"
             f"🏪 {bank_tx['merchant']} — {format_receipt_amount(receipt)}\n"
             f"📅 {date_str}\n"
-            f"🏷 Категория: {display_cat}",
+            + _("🏷 Category: {category}").format(category=display_cat),
             reply_markup=recat_keyboard(receipt.id),
         )
 
@@ -170,18 +179,18 @@ async def handle_receipt_photo(message: Message, bot: Bot, session: AsyncSession
         data = await parse_receipt(image_bytes)
     except LLMUnavailableError as e:
         logger.warning(f"Vision provider unavailable: {e}")
-        await status_msg.edit_text(VISION_UNAVAILABLE_TEXT)
+        await status_msg.edit_text(vision_unavailable_text())
         return
     except ValueError as e:
         logger.warning(f"Receipt parse error: {e}")
         await status_msg.edit_text(
-            "❌ Не удалось распознать чек. Попробуй сфотографировать чётче "
-            "или добавь трату вручную командой /add"
+            _("❌ Couldn't read the receipt. Try taking a sharper photo "
+              "or add the expense manually with /add")
         )
         return
     except Exception as e:
         logger.error(f"Vision service error: {e}", exc_info=True)
-        await status_msg.edit_text("❌ Произошла ошибка при обработке. Попробуй позже.")
+        await status_msg.edit_text(_("❌ Something went wrong while processing. Please try later."))
         return
 
     currency = data.get("currency", "PLN")
@@ -200,26 +209,27 @@ async def handle_receipt_photo(message: Message, bot: Bot, session: AsyncSession
         total_pln=total_pln,
     )
 
-    store = data.get("store") or "Неизвестный магазин"
-    date_str = format_date_ru(data.get("date"))
+    store = data.get("store") or _("Unknown store")
+    date_str = format_date_str(data.get("date"))
     items = data.get("items", [])
 
     lines = [
-        "✅ *Чек сохранён!*\n",
-        f"🏪 Магазин: {store}",
-        f"📅 Дата: {date_str}",
-        f"💰 Итого: {format_receipt_amount(receipt)}",
+        _("✅ *Receipt saved!*") + "\n",
+        _("🏪 Store: {store}").format(store=store),
+        _("📅 Date: {date}").format(date=date_str),
+        _("💰 Total: {amount}").format(amount=format_receipt_amount(receipt)),
     ]
 
     if items:
-        lines.append(f"\n📦 Товары ({len(items)}):")
+        lines.append("\n" + _("📦 Items ({count}):").format(count=len(items)))
         preview = items[:10]
         lines.append(format_items_list(preview, receipt.currency))
         if len(items) > 10:
-            lines.append(f"  ... и ещё {len(items) - 10} позиций")
+            rest = len(items) - 10
+            lines.append("  " + ngettext("... and {n} more item", "... and {n} more items", rest).format(n=rest))
 
     if data.get("total_mismatch"):
-        lines.append("\n⚠️ Итог чека не совпадает с суммой позиций.")
+        lines.append("\n" + _("⚠️ The receipt total doesn't match the sum of the items."))
 
     await status_msg.edit_text(
         "\n".join(lines),
@@ -250,7 +260,7 @@ async def handle_document(message: Message, bot: Bot, session: AsyncSession, red
     if not (is_pdf or is_csv):
         return
 
-    status_msg = await message.answer("⏳ Загружаю файл...")
+    status_msg = await message.answer(_("⏳ Downloading the file..."))
 
     try:
         buf = io.BytesIO()
@@ -258,7 +268,7 @@ async def handle_document(message: Message, bot: Bot, session: AsyncSession, red
         file_bytes = buf.getvalue()
     except Exception as e:
         logger.error(f"Failed to download document: {e}", exc_info=True)
-        await status_msg.edit_text("❌ Не удалось загрузить файл. Попробуй ещё раз.")
+        await status_msg.edit_text(_("❌ Couldn't download the file. Please try again."))
         return
 
     if is_csv:
@@ -270,17 +280,17 @@ async def handle_document(message: Message, bot: Bot, session: AsyncSession, red
         await _handle_pdf_receipt(message, status_msg, pdf_bytes, session, redis, bot)
         return
 
-    await status_msg.edit_text("⏳ Парсю выписку Erste Bank Polska...")
+    await status_msg.edit_text(_("⏳ Parsing the Erste Bank Polska statement..."))
 
     try:
         transactions = parse_erste_pdf(pdf_bytes)
     except Exception as e:
         logger.error(f"Erste PDF parse error: {e}", exc_info=True)
-        await status_msg.edit_text("❌ Не удалось разобрать выписку. Попробуй другой файл.")
+        await status_msg.edit_text(_("❌ Couldn't parse the statement. Try another file."))
         return
 
     if not transactions:
-        await status_msg.edit_text("⚠️ Транзакции не найдены. Возможно, формат выписки изменился.")
+        await status_msg.edit_text(_("⚠️ No transactions found. The statement format may have changed."))
         return
 
     expenses = [t for t in transactions if t["type"] == "expense"]
@@ -296,25 +306,37 @@ async def handle_document(message: Message, bot: Bot, session: AsyncSession, red
     )
 
     lines = [
-        "🏦 *Erste Bank Polska — выписка распознана*\n",
-        f"📊 Транзакций найдено: *{len(transactions)}*",
-        f"  — расходы: {len(expenses)} шт. на *{total_expenses:,.2f} PLN*".replace(",", " "),
-        f"  — доходы: {len(incomes)} шт. на *{total_incomes:,.2f} PLN*".replace(",", " "),
+        _("🏦 *Erste Bank Polska — statement recognized*") + "\n",
+        _("📊 Transactions found: *{count}*").format(count=len(transactions)),
+        _("  — expenses: {count} pcs. totalling *{amount} PLN*").format(
+            count=len(expenses), amount=f"{total_expenses:,.2f}".replace(",", " ")
+        ),
+        _("  — income: {count} pcs. totalling *{amount} PLN*").format(
+            count=len(incomes), amount=f"{total_incomes:,.2f}".replace(",", " ")
+        ),
     ]
 
     if expenses:
-        lines.append("\n*Последние 5 расходов:*")
+        lines.append("\n" + _("*Last 5 expenses:*"))
         for t in expenses[-5:]:
             lines.append(f"  {t['date']}  {t['category_display']}  -{abs(t['amount']):.2f} PLN")
-            lines.append(f"  _{t['description'][:60]}_")
+            lines.append(f"  _{(display_name(t['description']) or '')[:60]}_")
 
-    lines.append("\nНажми кнопку, чтобы сохранить все транзакции в базу данных:")
+    lines.append("\n" + _("Tap the button to save all transactions to the database:"))
 
     await status_msg.edit_text(
         "\n".join(lines),
         parse_mode="Markdown",
         reply_markup=erste_save_keyboard(),
     )
+
+
+def _duplicates_header(count: int) -> str:
+    return ngettext(
+        "⚠️ Found {n} possible duplicate — this transaction was already added manually:",
+        "⚠️ Found {n} possible duplicates — these transactions were already added manually:",
+        count,
+    ).format(n=count) + "\n"
 
 
 async def _handle_revolut_csv(
@@ -327,22 +349,22 @@ async def _handle_revolut_csv(
     text = file_bytes.decode("utf-8-sig", errors="ignore")
     if not is_revolut_statement(text):
         await status_msg.edit_text(
-            "❌ Не удалось распознать файл. Поддерживаются выписки Erste Bank Polska (PDF) "
-            "и сводные данные Revolut (CSV)."
+            _("❌ Couldn't recognize the file. Supported: Erste Bank Polska statements (PDF) "
+              "and Revolut consolidated statements (CSV).")
         )
         return
 
-    await status_msg.edit_text("⏳ Парсю выписку Revolut...")
+    await status_msg.edit_text(_("⏳ Parsing the Revolut statement..."))
 
     try:
         transactions = parse_revolut_csv(file_bytes)
     except Exception as e:
         logger.error(f"Revolut CSV parse error: {e}", exc_info=True)
-        await status_msg.edit_text("❌ Не удалось разобрать файл. Попробуй другой экспорт.")
+        await status_msg.edit_text(_("❌ Couldn't parse the file. Try another export."))
         return
 
     if not transactions:
-        await status_msg.edit_text("⚠️ Транзакции не найдены. Возможно, формат экспорта изменился.")
+        await status_msg.edit_text(_("⚠️ No transactions found. The export format may have changed."))
         return
 
     total_pln = sum(t["total_pln"] for t in transactions)
@@ -357,23 +379,23 @@ async def _handle_revolut_csv(
     )
 
     lines = [
-        "💳 *Revolut — сводная выписка распознана*\n",
-        f"📊 Покупок найдено: *{len(transactions)}*",
-        f"💰 Итого: *{total_pln:,.2f} PLN*".replace(",", " "),
+        _("💳 *Revolut — consolidated statement recognized*") + "\n",
+        _("📊 Purchases found: *{count}*").format(count=len(transactions)),
+        _("💰 Total: *{amount} PLN*").format(amount=f"{total_pln:,.2f}".replace(",", " ")),
         "",
-        "*По валютам:* " + ", ".join(
+        _("*By currency:*") + " " + ", ".join(
             f"{currency_flag(c)} {c} ({n})" for c, n in sorted(by_currency.items())
         ),
     ]
 
     recent = transactions[-5:]
     if recent:
-        lines.append("\n*Последние покупки:*")
+        lines.append("\n" + _("*Latest purchases:*"))
         for t in recent:
             lines.append(f"  {t['date']}  {t['category_display']}  -{t['amount']:.2f} {t['currency']}")
-            lines.append(f"  _{t['description'][:60]}_")
+            lines.append(f"  _{(display_name(t['description']) or '')[:60]}_")
 
-    lines.append("\nНажми кнопку, чтобы сохранить все транзакции в базу данных:")
+    lines.append("\n" + _("Tap the button to save all transactions to the database:"))
 
     await status_msg.edit_text(
         "\n".join(lines),
@@ -393,16 +415,16 @@ async def revolut_save_callback(
 
     raw = await redis.get(_revolut_redis_key(call.from_user.id))
     if not raw:
-        await call.message.edit_text("❌ Данные истекли. Загрузи выписку ещё раз.")
+        await call.message.edit_text(_("❌ The data has expired. Upload the statement again."))
         return
 
     try:
         transactions = json.loads(raw)
     except Exception:
-        await call.message.edit_text("❌ Ошибка чтения данных. Загрузи выписку ещё раз.")
+        await call.message.edit_text(_("❌ Couldn't read the data. Upload the statement again."))
         return
 
-    await call.message.edit_text("⏳ Сохраняю транзакции...")
+    await call.message.edit_text(_("⏳ Saving transactions..."))
 
     try:
         count, _pending, duplicates = await create_bank_transactions(
@@ -411,25 +433,25 @@ async def revolut_save_callback(
         await session.commit()
     except Exception as e:
         logger.error(f"Failed to save Revolut transactions: {e}", exc_info=True)
-        await call.message.edit_text("❌ Ошибка при сохранении. Попробуй позже.")
+        await call.message.edit_text(_("❌ Saving failed. Please try later."))
         return
 
     await redis.delete(_revolut_redis_key(call.from_user.id))
 
     total_pln = sum(t["total_pln"] for t in transactions)
     await call.message.edit_text(
-        f"✅ *Сохранено {count} транзакций!*\n\n"
-        f"💸 Расходы: {total_pln:,.2f} PLN\n\n".replace(",", " ") +
-        "Используй /stats для просмотра статистики.",
+        ngettext("✅ *Saved {n} transaction!*", "✅ *Saved {n} transactions!*", count).format(n=count) + "\n\n"
+        + _("💸 Expenses: {amount} PLN").format(amount=f"{total_pln:,.2f}".replace(",", " ")) + "\n\n"
+        + _("Use /stats to see your statistics."),
         parse_mode="Markdown",
     )
 
     if duplicates:
-        lines = [f"⚠️ Найдено {len(duplicates)} возможных дублей — эти транзакции уже были добавлены вручную:\n"]
+        lines = [_duplicates_header(len(duplicates))]
         for d in duplicates:
-            date_str = format_date_ru(d["date"]) if d.get("date") else "?"
-            lines.append(f"  — {d['description']} — {d['amount']:.2f} — {date_str}")
-        lines.append("\nОни не были добавлены повторно.")
+            date_str = format_date_str(d["date"]) if d.get("date") else "?"
+            lines.append(f"  — {display_name(d['description'])} — {d['amount']:.2f} — {date_str}")
+        lines.append("\n" + _("They were not added again."))
         await call.message.answer("\n".join(lines))
 
     await budget_service.check_and_notify_budgets(session, call.from_user.id, bot)
@@ -439,7 +461,7 @@ async def revolut_save_callback(
 async def revolut_cancel_callback(call: CallbackQuery, redis: aioredis.Redis) -> None:
     await call.answer()
     await redis.delete(_revolut_redis_key(call.from_user.id))
-    await call.message.edit_text("❌ Сохранение отменено.")
+    await call.message.edit_text(_("❌ Saving cancelled."))
 
 
 async def _handle_pdf_receipt(
@@ -451,33 +473,33 @@ async def _handle_pdf_receipt(
     bot: Bot,
 ) -> None:
     """Render the PDF's pages to images and run them through the receipt vision pipeline."""
-    await status_msg.edit_text("⏳ Конвертирую PDF в изображение...")
+    await status_msg.edit_text(_("⏳ Converting the PDF to an image..."))
 
     try:
         image_bytes = _pdf_pages_to_jpeg(pdf_bytes)
     except Exception as e:
         logger.error(f"PDF render error: {e}", exc_info=True)
-        await status_msg.edit_text("❌ Не удалось прочитать PDF. Попробуй другой файл.")
+        await status_msg.edit_text(_("❌ Couldn't read the PDF. Try another file."))
         return
 
-    await status_msg.edit_text("⏳ Обрабатываю чек...")
+    await status_msg.edit_text(_("⏳ Processing the receipt..."))
 
     try:
         data = await parse_receipt(image_bytes)
     except LLMUnavailableError as e:
         logger.warning(f"Vision provider unavailable: {e}")
-        await status_msg.edit_text(VISION_UNAVAILABLE_TEXT)
+        await status_msg.edit_text(vision_unavailable_text())
         return
     except ValueError as e:
         logger.warning(f"Receipt parse error from PDF: {e}")
         await status_msg.edit_text(
-            "❌ Не удалось распознать чек в PDF. Попробуй прислать фото чека "
-            "или добавь трату вручную командой /add"
+            _("❌ Couldn't read the receipt in the PDF. Try sending a photo of the receipt "
+              "or add the expense manually with /add")
         )
         return
     except Exception as e:
         logger.error(f"Vision service error for PDF receipt: {e}", exc_info=True)
-        await status_msg.edit_text("❌ Произошла ошибка при обработке. Попробуй позже.")
+        await status_msg.edit_text(_("❌ Something went wrong while processing. Please try later."))
         return
 
     currency = data.get("currency", "PLN")
@@ -495,26 +517,27 @@ async def _handle_pdf_receipt(
         total_pln=total_pln,
     )
 
-    store = data.get("store") or "Неизвестный магазин"
-    date_str = format_date_ru(data.get("date"))
+    store = data.get("store") or _("Unknown store")
+    date_str = format_date_str(data.get("date"))
     items = data.get("items", [])
 
     lines = [
-        "✅ *Чек из PDF сохранён!*\n",
-        f"🏪 Магазин: {store}",
-        f"📅 Дата: {date_str}",
-        f"💰 Итого: {format_receipt_amount(receipt)}",
+        _("✅ *Receipt from PDF saved!*") + "\n",
+        _("🏪 Store: {store}").format(store=store),
+        _("📅 Date: {date}").format(date=date_str),
+        _("💰 Total: {amount}").format(amount=format_receipt_amount(receipt)),
     ]
 
     if items:
-        lines.append(f"\n📦 Товары ({len(items)}):")
+        lines.append("\n" + _("📦 Items ({count}):").format(count=len(items)))
         preview = items[:10]
         lines.append(format_items_list(preview, receipt.currency))
         if len(items) > 10:
-            lines.append(f"  ... и ещё {len(items) - 10} позиций")
+            rest = len(items) - 10
+            lines.append("  " + ngettext("... and {n} more item", "... and {n} more items", rest).format(n=rest))
 
     if data.get("total_mismatch"):
-        lines.append("\n⚠️ Итог чека не совпадает с суммой позиций.")
+        lines.append("\n" + _("⚠️ The receipt total doesn't match the sum of the items."))
 
     await status_msg.edit_text("\n".join(lines), parse_mode="Markdown")
 
@@ -533,16 +556,16 @@ async def erste_save_callback(
 
     raw = await redis.get(_erste_redis_key(call.from_user.id))
     if not raw:
-        await call.message.edit_text("❌ Данные истекли. Загрузи выписку ещё раз.")
+        await call.message.edit_text(_("❌ The data has expired. Upload the statement again."))
         return
 
     try:
         transactions = json.loads(raw)
     except Exception:
-        await call.message.edit_text("❌ Ошибка чтения данных. Загрузи выписку ещё раз.")
+        await call.message.edit_text(_("❌ Couldn't read the data. Upload the statement again."))
         return
 
-    await call.message.edit_text("⏳ Сохраняю транзакции...")
+    await call.message.edit_text(_("⏳ Saving transactions..."))
 
     try:
         count, pending_merchants, duplicates = await create_bank_transactions(
@@ -551,7 +574,7 @@ async def erste_save_callback(
         await session.commit()
     except Exception as e:
         logger.error(f"Failed to save Erste transactions: {e}", exc_info=True)
-        await call.message.edit_text("❌ Ошибка при сохранении. Попробуй позже.")
+        await call.message.edit_text(_("❌ Saving failed. Please try later."))
         return
 
     await redis.delete(_erste_redis_key(call.from_user.id))
@@ -562,19 +585,19 @@ async def erste_save_callback(
     total_incomes = sum(t["amount"] for t in incomes)
 
     await call.message.edit_text(
-        f"✅ *Сохранено {count} транзакций!*\n\n"
-        f"💸 Расходы: {total_expenses:,.2f} PLN\n".replace(",", " ") +
-        f"💰 Доходы: {total_incomes:,.2f} PLN\n\n".replace(",", " ") +
-        "Используй /stats для просмотра статистики.",
+        ngettext("✅ *Saved {n} transaction!*", "✅ *Saved {n} transactions!*", count).format(n=count) + "\n\n"
+        + _("💸 Expenses: {amount} PLN").format(amount=f"{total_expenses:,.2f}".replace(",", " ")) + "\n"
+        + _("💰 Income: {amount} PLN").format(amount=f"{total_incomes:,.2f}".replace(",", " ")) + "\n\n"
+        + _("Use /stats to see your statistics."),
         parse_mode="Markdown",
     )
 
     if duplicates:
-        lines = [f"⚠️ Найдено {len(duplicates)} возможных дублей — эти транзакции уже были добавлены вручную:\n"]
+        lines = [_duplicates_header(len(duplicates))]
         for d in duplicates:
-            date_str = format_date_ru(d["date"]) if d.get("date") else "?"
-            lines.append(f"  — {d['description']} — {d['amount']:.2f} PLN — {date_str}")
-        lines.append("\nОни не были добавлены повторно.")
+            date_str = format_date_str(d["date"]) if d.get("date") else "?"
+            lines.append(f"  — {display_name(d['description'])} — {d['amount']:.2f} PLN — {date_str}")
+        lines.append("\n" + _("They were not added again."))
         await call.message.answer("\n".join(lines))
 
     if pending_merchants:
@@ -590,8 +613,10 @@ async def _ask_foreign_merchant(message: Message, pm: dict) -> None:
     orig_currency = pm["orig_currency"]
     amount_pln = pm["amount_pln"]
     await message.answer(
-        f"💳 Оплата картой за рубежом: {orig_amount} {orig_currency} ({amount_pln:.2f} PLN)\n"
-        "Как назвать этот платёж? Введите название магазина/сервиса:"
+        _("💳 Card payment abroad: {amount} {currency} ({amount_pln} PLN)\n"
+          "What should this payment be called? Enter the store/service name:").format(
+            amount=orig_amount, currency=orig_currency, amount_pln=f"{amount_pln:.2f}"
+        )
     )
 
 
@@ -607,14 +632,14 @@ async def handle_foreign_merchant_name(
 
     store_name = message.text.strip()
     if not store_name:
-        await message.answer("Введите непустое название:")
+        await message.answer(_("Enter a non-empty name:"))
         return
 
     pm = pending_merchants[pm_index]
     await update_receipt_store(session, pm["receipt_id"], store_name)
     await session.commit()
 
-    await message.answer(f"✅ Сохранено: *{store_name}*", parse_mode="Markdown")
+    await message.answer(_("✅ Saved: *{name}*").format(name=store_name), parse_mode="Markdown")
 
     next_index = pm_index + 1
     if next_index < len(pending_merchants):
@@ -628,7 +653,7 @@ async def handle_foreign_merchant_name(
 async def erste_cancel_callback(call: CallbackQuery, redis: aioredis.Redis) -> None:
     await call.answer()
     await redis.delete(_erste_redis_key(call.from_user.id))
-    await call.message.edit_text("❌ Сохранение отменено.")
+    await call.message.edit_text(_("❌ Saving cancelled."))
 
 
 @router.callback_query(F.data.startswith("recat:"))
@@ -640,30 +665,30 @@ async def recat_callback(call: CallbackQuery) -> None:
 
 @router.callback_query(F.data.startswith("recat_set:"))
 async def recat_set_callback(call: CallbackQuery, session: AsyncSession) -> None:
-    _, receipt_id_str, category_str = call.data.split(":")
+    _prefix, receipt_id_str, category_str = call.data.split(":")
     receipt_id = int(receipt_id_str)
     await call.answer()
 
     try:
         category = Category(category_str)
     except ValueError:
-        await call.answer("❌ Неизвестная категория", show_alert=True)
+        await call.answer(_("❌ Unknown category"), show_alert=True)
         return
 
     await update_receipt_category(session, receipt_id, category)
 
     receipt = await get_receipt_by_id(session, receipt_id)
-    cat_label = CATEGORY_LABEL.get(category_str, category_str)
+    cat_label = picker_label(category_str)
 
     if receipt:
-        date_str = format_date_ru(receipt.date.isoformat() if receipt.date else None)
+        date_str = format_date_str(receipt.date.isoformat() if receipt.date else None)
         text = (
-            f"✅ Сохранено!\n"
-            f"🏪 {receipt.store or '?'} — {format_receipt_amount(receipt)}\n"
+            _("✅ Saved!") + "\n"
+            f"🏪 {display_name(receipt.store) or '?'} — {format_receipt_amount(receipt)}\n"
             f"📅 {date_str}\n"
-            f"🏷 Категория: {cat_label} ✓"
+            + _("🏷 Category: {category}").format(category=cat_label) + " ✓"
         )
     else:
-        text = f"✅ Категория обновлена: {cat_label}"
+        text = _("✅ Category updated: {category}").format(category=cat_label)
 
     await call.message.edit_text(text, reply_markup=recat_keyboard(receipt_id))

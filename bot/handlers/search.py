@@ -10,6 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.db import crud
 from bot.db.models import Item
 from bot.services.search_parser import parse_search_query
+from bot.i18n import _, ngettext
+from bot.markers import display_name
 from bot.utils.formatters import format_date
 
 logger = logging.getLogger(__name__)
@@ -20,9 +22,9 @@ SEARCH_RESULT_LIMIT = 200  # keep in sync with crud.search_transactions LIMIT
 _SEARCH_RESULTS_KEY = "search:results:{uid}"
 _SEARCH_TTL = 300
 
-FALLBACK_NOTICE = (
-    "⚠️ Поиск выполнен по упрощённым правилам — результаты могут быть неточными."
-)
+def fallback_notice() -> str:
+    """Shown whenever the regex fallback parser was used — must never be silent."""
+    return _("⚠️ The search used simplified rules — results may be inaccurate.")
 
 CATEGORY_EMOJI = {
     "groceries": "🛒", "cafe": "☕", "pharmacy": "💊", "transport": "🚗",
@@ -37,9 +39,9 @@ def _results_keyboard(page: int, total_pages: int) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     nav = []
     if page > 0:
-        nav.append(InlineKeyboardButton(text="◀ Назад", callback_data=f"srchpage:{page - 1}"))
+        nav.append(InlineKeyboardButton(text=_("◀ Back"), callback_data=f"srchpage:{page - 1}"))
     if page < total_pages - 1:
-        nav.append(InlineKeyboardButton(text="▶ Далее", callback_data=f"srchpage:{page + 1}"))
+        nav.append(InlineKeyboardButton(text=_("▶ Next"), callback_data=f"srchpage:{page + 1}"))
     if nav:
         builder.row(*nav)
     return builder.as_markup()
@@ -62,22 +64,22 @@ def _build_results_text(data: dict, page: int) -> str:
     page = max(0, min(page, total_pages - 1))
     page_ids = ids[page * PAGE_SIZE : (page + 1) * PAGE_SIZE]
 
-    lines = ["🔍 *Результаты поиска*\n"]
+    lines = [_("🔍 *Search results*") + "\n"]
     for rid in page_ids:
         receipt = data["rows"].get(rid)
         if receipt is None:
             continue
         amount = receipt.personal_amount()
-        store = receipt.store or "?"
+        store = display_name(receipt.store) or "?"
         date_str = format_date(receipt.date) if receipt.date else "—"
         lines.append(f"• {date_str} — {store} — {amount:.2f} PLN {_receipt_emoji(receipt)}")
 
-    count_word = "транзакция" if len(ids) % 10 == 1 and len(ids) % 100 != 11 else "транзакций"
-    lines.append(f"\nВсего: {len(ids)} {count_word}, сумма {total_sum:.2f} PLN")
+    count = ngettext("{n} transaction", "{n} transactions", len(ids)).format(n=len(ids))
+    lines.append("\n" + _("Total: {transactions}, sum {amount} PLN").format(transactions=count, amount=f"{total_sum:.2f}"))
     if len(ids) >= SEARCH_RESULT_LIMIT:
-        lines.append("(показаны первые 200 совпадений)")
+        lines.append(_("(showing the first {n} matches)").format(n=SEARCH_RESULT_LIMIT))
     if fallback:
-        lines.append("\n" + FALLBACK_NOTICE)
+        lines.append("\n" + fallback_notice())
     return "\n".join(lines)
 
 
@@ -92,7 +94,7 @@ async def _render_results(
 ) -> None:
     raw = await redis.get(_SEARCH_RESULTS_KEY.format(uid=user_id))
     if not raw:
-        await target_message.answer("⚠️ Сессия поиска устарела. Выполни /search заново.")
+        await target_message.answer(_("⚠️ The search session has expired. Run /search again."))
         return
     data = json.loads(raw)
     ids: list[int] = data["ids"]
@@ -130,8 +132,8 @@ async def cmd_search(message: Message, session: AsyncSession, redis) -> None:
     query = parts[1].strip() if len(parts) > 1 else ""
     if not query:
         await message.answer(
-            "Что искать? Например: 'траты в Kaufland за июнь' "
-            "или 'покупки дороже 200 злотых в мае'"
+            _("What should I look for? For example: 'Kaufland expenses in June' "
+              "or 'purchases over 200 złoty in May'")
         )
         return
 
@@ -149,7 +151,7 @@ async def cmd_search(message: Message, session: AsyncSession, redis) -> None:
     )
 
     if not receipts:
-        await message.answer("По этому запросу ничего не найдено 🤷")
+        await message.answer(_("Nothing found for this query 🤷"))
         return
 
     ids = [r.id for r in receipts]

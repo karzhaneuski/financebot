@@ -3,7 +3,7 @@ import hmac
 import json
 from urllib.parse import parse_qsl
 
-from fastapi import Header, HTTPException
+from fastapi import Depends, Header, HTTPException
 
 
 def verify_telegram_init_data(init_data: str, bot_token: str) -> dict | None:
@@ -34,11 +34,12 @@ def dev_token_accepted(authorization: str, settings) -> bool:
     return hmac.compare_digest(authorization, f"Bearer {settings.DEV_TOKEN}")
 
 
-async def get_current_user(authorization: str = Header()) -> int:
+async def get_telegram_user(authorization: str = Header()) -> dict:
+    """Authenticated Telegram user: {"id": int, "language_code": str | None}."""
     from bot.config import settings
 
     if dev_token_accepted(authorization, settings):
-        return settings.DEV_USER_ID
+        return {"id": settings.DEV_USER_ID, "language_code": None}
 
     if not authorization.startswith("tma "):
         raise HTTPException(status_code=401, detail="Invalid authorization header")
@@ -51,4 +52,8 @@ async def get_current_user(authorization: str = Header()) -> int:
     if not user_id:
         raise HTTPException(status_code=401, detail="No user id in initData")
 
-    return int(user_id)
+    return {"id": int(user_id), "language_code": user.get("language_code")}
+
+
+async def get_current_user(tg_user: dict = Depends(get_telegram_user)) -> int:
+    return tg_user["id"]

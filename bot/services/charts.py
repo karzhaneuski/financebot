@@ -6,25 +6,17 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from datetime import datetime
 
+from bot.categories import category_label
+from bot.markers import display_name
+
 plt.rcParams["font.family"] = "DejaVu Sans"
 
 PALETTE = ["#AEC6CF", "#FFD1DC", "#B5EAD7", "#FFDAC1", "#C7CEEA", "#F8B4B4", "#D4F1F4", "#E2D9F3"]
 
-CATEGORY_RU = {
-    "groceries": "Продукты",
-    "cafe": "Кафе",
-    "pharmacy": "Аптека",
-    "transport": "Транспорт",
-    "electronics": "Электроника",
-    "clothing": "Одежда",
-    "household": "Хозтовары",
-    "housing": "Жильё",
-    "other": "Другое",
-}
 
 
 async def build_pie_chart(data: list[dict], title: str) -> bytes:
-    labels = [CATEGORY_RU.get(row["category"], row["category"]) for row in data]
+    labels = [category_label(row["category"]) for row in data]
     values = [float(row["total"]) for row in data]
     colors = (PALETTE * ((len(data) // len(PALETTE)) + 1))[:len(data)]
 
@@ -50,7 +42,7 @@ async def build_pie_chart(data: list[dict], title: str) -> bytes:
 
 
 async def build_bar_chart(data: list[dict], title: str, x_key: str, y_key: str) -> bytes:
-    labels = [str(row[x_key]) for row in data]
+    labels = [str(display_name(row[x_key])) for row in data]
     values = [float(row[y_key]) for row in data]
 
     fig, ax = plt.subplots(figsize=(8, 5))

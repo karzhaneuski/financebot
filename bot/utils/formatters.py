@@ -1,20 +1,11 @@
 from datetime import date, datetime
 from typing import Optional
 
-CATEGORY_NAMES = {
-    "groceries": "Продукты",
-    "cafe": "Кафе/Рестораны",
-    "pharmacy": "Аптека",
-    "transport": "Транспорт",
-    "electronics": "Электроника",
-    "clothing": "Одежда",
-    "household": "Дом/Быт",
-    "housing": "Жильё",
-    "entertainment": "Развлечения",
-    "health": "Здоровье",
-    "subscriptions": "Подписки",
-    "other": "Прочее",
-}
+from babel.dates import format_date as _babel_format_date
+
+from bot.categories import category_label
+from bot.i18n import _, current_language
+from bot.markers import display_name
 
 CURRENCY_SYMBOLS = {
     "PLN": "zł",
@@ -36,25 +27,38 @@ CURRENCY_FLAGS = {
     "GBP": "🇬🇧",
 }
 
-MONTHS_GENITIVE = [
-    "января", "февраля", "марта", "апреля", "мая", "июня",
-    "июля", "августа", "сентября", "октября", "ноября", "декабря",
-]
 
-MONTHS_NOMINATIVE = [
-    "январь", "февраль", "март", "апрель", "май", "июнь",
-    "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь",
-]
+# ── dates (month names come from CLDR via Babel, in the current language) ──
+
+def format_day_month_year(d: date) -> str:
+    """'5 June 2026' / '5 июня 2026' / '5 czerwca 2026'."""
+    return _babel_format_date(d, "d MMMM y", locale=current_language())
 
 
-def format_date_ru(date_str: str | None) -> str:
+def format_day_month(d: date) -> str:
+    """'5 June' / '5 июня' / '5 czerwca'."""
+    return _babel_format_date(d, "d MMMM", locale=current_language())
+
+
+def month_name(month: int) -> str:
+    """Standalone (nominative) month name, lowercase where the language does so."""
+    return _babel_format_date(date(2000, month, 1), "LLLL", locale=current_language())
+
+
+def format_month_year(year: int, month: int) -> str:
+    """'June 2026' / 'июнь 2026' / 'czerwiec 2026'."""
+    return _babel_format_date(date(year, month, 1), "LLLL y", locale=current_language())
+
+
+def format_date_str(date_str: str | None) -> str:
+    """Format an ISO 'YYYY-MM-DD' string; a friendly placeholder if missing/invalid."""
     if date_str is None:
-        return "дата не определена"
+        return _("date unknown")
     try:
         d = datetime.strptime(date_str, "%Y-%m-%d").date()
-        return f"{d.day} {MONTHS_GENITIVE[d.month - 1]} {d.year}"
     except (ValueError, TypeError):
-        return "дата не определена"
+        return _("date unknown")
+    return format_day_month_year(d)
 
 
 def format_currency(amount: float, currency: str) -> str:
@@ -90,7 +94,7 @@ def format_items_list(items: list[dict], currency: str) -> str:
     """
     lines = []
     for item in items:
-        name = item.get("name", "—")
+        name = display_name(item.get("name")) or "—"
         qty = item.get("quantity", 1)
         price = float(item.get("total_price", 0))
         qty_str = f" × {qty}" if qty != 1 else ""
@@ -110,21 +114,22 @@ def format_pln(amount: float) -> str:
 
 def format_date(d: Optional[date | datetime | str]) -> str:
     if d is None:
-        return "неизвестно"
+        return _("unknown")
     if isinstance(d, str):
-        return format_date_ru(d)
+        return format_date_str(d)
     if isinstance(d, datetime):
         d = d.date()
-    return f"{d.day} {MONTHS_GENITIVE[d.month - 1]} {d.year}"
+    return format_day_month_year(d)
 
 
 def format_category(category: str) -> str:
-    return CATEGORY_NAMES.get(category, category)
+    return category_label(category)
 
 
 def format_month(month: str) -> str:
+    """'2026-06' -> 'June 2026' in the current language."""
     try:
         dt = datetime.strptime(month, "%Y-%m")
-        return f"{MONTHS_NOMINATIVE[dt.month - 1]} {dt.year}"
     except ValueError:
         return month
+    return format_month_year(dt.year, dt.month)

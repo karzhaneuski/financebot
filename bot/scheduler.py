@@ -8,8 +8,9 @@ from aiogram import Bot
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from bot.db.crud import get_all_users_with_reports
+from bot.db.crud import get_all_users_with_reports, resolve_user_language
 from bot.db.engine import get_session
+from bot.i18n import i18n
 from bot.services.currency import FX_CACHE_TTL, FX_KEY, _fetch_rate_from_provider
 from bot.services.reports import build_daily_report, build_monthly_report, build_weekly_report
 
@@ -67,7 +68,9 @@ async def _send_daily(bot: Bot) -> None:
     for user_id in user_ids:
         try:
             async with get_session() as session:
-                text = await build_daily_report(session, user_id, yesterday)
+                language = await resolve_user_language(session, user_id)
+                with i18n.use_locale(language):
+                    text = await build_daily_report(session, user_id, yesterday)
             await bot.send_message(user_id, text, parse_mode="Markdown")
         except Exception:
             logger.exception("Daily report failed for user %s", user_id)
@@ -82,7 +85,9 @@ async def _send_weekly(bot: Bot) -> None:
     for user_id in user_ids:
         try:
             async with get_session() as session:
-                text = await build_weekly_report(session, user_id, week_start, week_end)
+                language = await resolve_user_language(session, user_id)
+                with i18n.use_locale(language):
+                    text = await build_weekly_report(session, user_id, week_start, week_end)
             await bot.send_message(user_id, text, parse_mode="Markdown")
         except Exception:
             logger.exception("Weekly report failed for user %s", user_id)
@@ -98,7 +103,9 @@ async def _send_monthly(bot: Bot) -> None:
     for user_id in user_ids:
         try:
             async with get_session() as session:
-                text = await build_monthly_report(session, user_id, year, month)
+                language = await resolve_user_language(session, user_id)
+                with i18n.use_locale(language):
+                    text = await build_monthly_report(session, user_id, year, month)
             await bot.send_message(user_id, text, parse_mode="Markdown")
         except Exception:
             logger.exception("Monthly report failed for user %s", user_id)

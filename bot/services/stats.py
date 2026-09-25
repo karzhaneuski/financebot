@@ -1,6 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.db import crud
+from bot.i18n import _, ngettext
+from bot.markers import display_name
 from bot.utils.formatters import format_category
 
 CATEGORY_EMOJI = {
@@ -14,17 +16,6 @@ CATEGORY_EMOJI = {
     "housing": "🏠",
     "other": "📦",
 }
-
-
-def _times_ru(n: int) -> str:
-    if 11 <= (n % 100) <= 19:
-        return "раз"
-    last = n % 10
-    if last == 1:
-        return "раз"
-    if last in (2, 3, 4):
-        return "раза"
-    return "раз"
 
 
 async def get_period_stats(session: AsyncSession, user_id: int, days: int) -> dict:
@@ -61,13 +52,13 @@ async def get_period_stats(session: AsyncSession, user_id: int, days: int) -> di
 async def format_stats_message(stats: dict, period_label: str) -> str:
     total = stats["total_pln"]
     lines = [
-        f"📊 *Статистика за {period_label}*\n",
-        f"💰 Итого потрачено: *{total:.2f} PLN*",
-        f"🧾 Количество чеков: *{stats['receipt_count']}*",
+        _("📊 *Statistics for {period}*").format(period=period_label) + "\n",
+        _("💰 Total spent: *{amount} PLN*").format(amount=f"{total:.2f}"),
+        _("🧾 Number of receipts: *{count}*").format(count=stats["receipt_count"]),
     ]
 
     if stats["by_category"]:
-        lines.append("\n📦 *По категориям:*")
+        lines.append("\n" + _("📦 *By category:*"))
         for row in stats["by_category"]:
             pct = round(row["total"] / total * 100) if total else 0
             emoji = CATEGORY_EMOJI.get(row["category"], "📦")
@@ -75,20 +66,22 @@ async def format_stats_message(stats: dict, period_label: str) -> str:
             lines.append(f"  {emoji} {name} — {row['total']:.2f} PLN ({pct}%)")
 
     if stats["by_store"]:
-        lines.append("\n🏪 *Топ магазины:*")
+        lines.append("\n" + _("🏪 *Top stores:*"))
         for i, row in enumerate(stats["by_store"], 1):
-            lines.append(f"  {i}. {row['store']} — {row['total']:.2f} PLN")
+            lines.append(f"  {i}. {display_name(row['store'])} — {row['total']:.2f} PLN")
 
     if stats["top_items"]:
-        lines.append("\n🔁 *Часто покупаемое:*")
+        lines.append("\n" + _("🔁 *Frequently bought:*"))
         for row in stats["top_items"]:
             n = row["count"]
+            bought = ngettext("bought {n} time", "bought {n} times", n).format(n=n)
             lines.append(
-                f"  • {row['name']} — куплено {n} {_times_ru(n)}, потрачено {row['total']:.2f} PLN"
+                f"  • {display_name(row['name'])} — "
+                + _("{bought}, spent {amount} PLN").format(bought=bought, amount=f"{row['total']:.2f}")
             )
 
     cash = stats.get("cash_withdrawals_pln", 0.0)
     if cash:
-        lines.append(f"\n💵 Снятия наличных: *{cash:.2f} PLN*")
+        lines.append("\n" + _("💵 Cash withdrawals: *{amount} PLN*").format(amount=f"{cash:.2f}"))
 
     return "\n".join(lines)

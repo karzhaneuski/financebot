@@ -7,15 +7,16 @@ from pathlib import Path
 
 import redis.asyncio as aioredis
 import uvicorn
-from aiogram import Bot, Dispatcher
+from aiogram import BaseMiddleware, Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.types import ErrorEvent
+from aiogram.types import Update
 
 from bot.api.app import app as fastapi_app
 from bot.config import settings
 from bot.db.engine import engine
-from bot.handlers import budget, common, export, manual, receipt, reports, search, split, stats
+from bot.handlers import budget, common, export, language, manual, receipt, reports, search, split, stats
+from bot.i18n import UserLocaleMiddleware, _, i18n
 from bot.scheduler import setup_scheduler
 from bot.middleware import DbSessionMiddleware, RedisMiddleware
 
@@ -52,6 +53,29 @@ HEARTBEAT_FILE = Path("/tmp/financebot-bot.heartbeat")
 HEARTBEAT_INTERVAL = 30  # seconds; the container healthcheck allows 120
 
 
+class UnhandledErrorMiddleware(BaseMiddleware):
+    """Last-resort handler: log the error and apologise to the user."""
+
+    async def __call__(self, handler, event: Update, data):
+        try:
+            return await handler(event, data)
+        except Exception as exc:
+            logger.exception(f"Unhandled error: {exc}")
+            # Swallowing the error here would let DbSessionMiddleware commit
+            # the half-done work, so roll back like an escaping error would.
+            session = data.get("session")
+            if session is not None:
+                await session.rollback()
+            if event.message is not None:
+                try:
+                    await event.message.answer(
+                        _("❌ An unexpected error occurred. Try again or send /help")
+                    )
+                except Exception:
+                    pass
+            return True
+
+
 def role_components(role: str) -> frozenset[str]:
     """What a process started with APP_ROLE=<role> runs.
 
@@ -76,8 +100,13 @@ def build_dispatcher(redis: aioredis.Redis, *, session_middleware=None) -> Dispa
 
     dp.update.middleware(session_middleware or DbSessionMiddleware())
     dp.update.middleware(RedisMiddleware(redis))
+    # After the session middleware: the user's language is read from the DB.
+    dp.update.middleware(UserLocaleMiddleware(i18n))
+    # Innermost, so the apology is sent in the user's language.
+    dp.update.middleware(UnhandledErrorMiddleware())
 
     dp.include_router(common.router)
+    dp.include_router(language.router)
     dp.include_router(receipt.router)
     dp.include_router(stats.router)
     dp.include_router(budget.router)
@@ -86,17 +115,6 @@ def build_dispatcher(redis: aioredis.Redis, *, session_middleware=None) -> Dispa
     dp.include_router(reports.router)
     dp.include_router(search.router)
     dp.include_router(split.router)
-
-    @dp.errors()
-    async def global_error_handler(event: ErrorEvent) -> bool:
-        logger.exception(f"Unhandled error: {event.exception}")
-        try:
-            await event.update.message.answer(
-                "❌ Произошла непредвиденная ошибка. Попробуй ещё раз или напиши /help"
-            )
-        except Exception:
-            pass
-        return True
 
     return dp
 
@@ -126,6 +144,7 @@ async def main(role: str | None = None) -> None:
             default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN),
         )
         dp = build_dispatcher(redis)
+        await language.setup_bot_commands(bot)
         tasks.append(dp.start_polling(bot))
 
     if "scheduler" in components:

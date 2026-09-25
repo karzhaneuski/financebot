@@ -1,0 +1,1255 @@
+# Translations template for FinanceBot.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the FinanceBot project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FinanceBot VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-09-25 01:04+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#, python-brace-format
+msgid "  — expenses: {count} pcs. totalling *{amount} PLN*"
+msgstr ""
+
+#, python-brace-format
+msgid "  — income: {count} pcs. totalling *{amount} PLN*"
+msgstr ""
+
+msgid "(home currency)"
+msgstr ""
+
+#, python-brace-format
+msgid "(showing the first {n} matches)"
+msgstr ""
+
+#, python-brace-format
+msgid "*All time:* {amount} PLN, {qty} pcs"
+msgstr ""
+
+msgid "*By currency:*"
+msgstr ""
+
+msgid "*By store:*"
+msgstr ""
+
+msgid "*Last 5 expenses:*"
+msgstr ""
+
+msgid "*Latest purchases:*"
+msgstr ""
+
+msgid "*Purchase history:*"
+msgstr ""
+
+#, python-brace-format
+msgid "... and {n} more item"
+msgid_plural "... and {n} more items"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "Add an expense manually"
+msgstr ""
+
+msgid "Akademik"
+msgstr ""
+
+msgid "All time"
+msgstr ""
+
+msgid "Apr"
+msgstr ""
+
+msgid "Aug"
+msgstr ""
+
+#, python-brace-format
+msgid "Bought: *{qty} pcs*"
+msgstr ""
+
+msgid "Budget deleted"
+msgstr ""
+
+msgid "Budget not found."
+msgstr ""
+
+msgid "Budgets by category"
+msgstr ""
+
+msgid "By category:"
+msgstr ""
+
+msgid "Cafés/Restaurants"
+msgstr ""
+
+msgid "Cancel the current action"
+msgstr ""
+
+msgid "Cancelled."
+msgstr ""
+
+msgid "Card payment abroad"
+msgstr ""
+
+msgid "Cash deposit"
+msgstr ""
+
+msgid "Cash withdrawal"
+msgstr ""
+
+msgid "Category"
+msgstr ""
+
+msgid "Change language"
+msgstr ""
+
+#, python-brace-format
+msgid "Chart for {period}"
+msgstr ""
+
+msgid "Choose a category:"
+msgstr ""
+
+msgid "Choose the receipt you want to split:"
+msgstr ""
+
+msgid "Clothing"
+msgstr ""
+
+msgid "Currency"
+msgstr ""
+
+msgid "Custom dates"
+msgstr ""
+
+msgid "Daily (02:00)"
+msgstr ""
+
+#, python-brace-format
+msgid "Daily spending — {period}"
+msgstr ""
+
+msgid "Date"
+msgstr ""
+
+msgid "Day"
+msgstr ""
+
+msgid "Dec"
+msgstr ""
+
+#, python-brace-format
+msgid "Delete the *{category}* budget ({limit}/month)?"
+msgstr ""
+
+#, python-brace-format
+msgid "Difference: {diff} PLN"
+msgstr ""
+
+msgid "Dormitory"
+msgstr ""
+
+msgid "Eating out"
+msgstr ""
+
+msgid "Electronics"
+msgstr ""
+
+msgid "Enter a non-empty name:"
+msgstr ""
+
+msgid "Enter the date as *DD.MM.YYYY* or `/skip` for today:"
+msgstr ""
+
+#, python-brace-format
+msgid "Enter the limit for *{category}* in złoty (PLN):"
+msgstr ""
+
+#, python-brace-format
+msgid "Enter the monthly limit for *{category}* (PLN):"
+msgstr ""
+
+msgid "Enter the store or place name (or `/skip` to skip):"
+msgstr ""
+
+msgid "Entertainment"
+msgstr ""
+
+msgid "Expense"
+msgstr ""
+
+msgid "Expenses:"
+msgstr ""
+
+msgid "Export data"
+msgstr ""
+
+msgid "FAVOURITE CATEGORY"
+msgstr ""
+
+msgid "Feb"
+msgstr ""
+
+msgid "FinanceBot · your personal year in numbers"
+msgstr ""
+
+#, python-brace-format
+msgid "Found {n} match for “{query}”. Choose a product:"
+msgid_plural "Found {n} matches for “{query}”. Choose a product:"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "Groceries"
+msgstr ""
+
+msgid "Health"
+msgstr ""
+
+msgid "Household"
+msgstr ""
+
+msgid "Housing"
+msgstr ""
+
+msgid "Item"
+msgstr ""
+
+msgid "Items"
+msgstr ""
+
+msgid "Jan"
+msgstr ""
+
+msgid "Jul"
+msgstr ""
+
+msgid "Jun"
+msgstr ""
+
+msgid "Last month"
+msgstr ""
+
+msgid "Last week"
+msgstr ""
+
+msgid "Last year"
+msgstr ""
+
+msgid "List of commands"
+msgstr ""
+
+msgid "MOST EXPENSIVE RECEIPT"
+msgstr ""
+
+msgid "Mar"
+msgstr ""
+
+#, python-brace-format
+msgid ""
+"Mark what was bought *for you* (receipt of {total} {currency} ≈ "
+"{total_pln} PLN):\n"
+"\n"
+"Yours right now: *{personal} PLN*"
+msgstr ""
+
+msgid "May"
+msgstr ""
+
+msgid "Month"
+msgstr ""
+
+msgid "Monthly (1st, 02:00)"
+msgstr ""
+
+#, python-brace-format
+msgid "Most visited store: {store} — {visits}, {amount} PLN"
+msgstr ""
+
+#, python-brace-format
+msgid "Next charge: {date}"
+msgstr ""
+
+msgid "No budgets set. Use /budget to add one."
+msgstr ""
+
+msgid "No categories yet"
+msgstr ""
+
+msgid "No items found."
+msgstr ""
+
+msgid "No name"
+msgstr ""
+
+#, python-brace-format
+msgid "No products found for “{period}”."
+msgstr ""
+
+msgid "No products found."
+msgstr ""
+
+msgid "No purchases in this period."
+msgstr ""
+
+msgid "No receipts yet — nothing to split 🙂"
+msgstr ""
+
+msgid "No spending found for this period 🙂"
+msgstr ""
+
+#, python-brace-format
+msgid "No spending found for “{period}” 🙂"
+msgstr ""
+
+msgid "No spending this month 🎉"
+msgstr ""
+
+msgid "No spending this week 🎉"
+msgstr ""
+
+msgid ""
+"No spending this year yet 🤷 Add receipts — and get your summary at the "
+"end of the year!"
+msgstr ""
+
+msgid "No spending yesterday 🎉"
+msgstr ""
+
+msgid "No store data for this period."
+msgstr ""
+
+#, python-brace-format
+msgid "No stores found for “{period}”."
+msgstr ""
+
+msgid "No stores yet"
+msgstr ""
+
+msgid "No subscriptions found yet."
+msgstr ""
+
+msgid "Not enough data for a daily chart."
+msgstr ""
+
+msgid "Nothing found for this query 🤷"
+msgstr ""
+
+#, python-brace-format
+msgid "Nothing found for “{query}”. Try another name."
+msgstr ""
+
+msgid "Nothing to cancel."
+msgstr ""
+
+msgid "Nov"
+msgstr ""
+
+msgid "Oct"
+msgstr ""
+
+msgid "Online shopping"
+msgstr ""
+
+msgid "Other"
+msgstr ""
+
+#, python-brace-format
+msgid "Over by: {amount} PLN"
+msgstr ""
+
+msgid "Pharmacy"
+msgstr ""
+
+msgid "Price"
+msgstr ""
+
+msgid "Qty"
+msgstr ""
+
+msgid "Receipts"
+msgstr ""
+
+msgid "Recurring subscriptions"
+msgstr ""
+
+#, python-brace-format
+msgid "Remaining: {amount} PLN"
+msgstr ""
+
+msgid "Scheduled report settings"
+msgstr ""
+
+msgid "Scholarship"
+msgstr ""
+
+msgid "Search transactions in plain text"
+msgstr ""
+
+msgid "Sep"
+msgstr ""
+
+msgid "Share the picture with your year stats 😉"
+msgstr ""
+
+msgid "Spending by month"
+msgstr ""
+
+#, python-brace-format
+msgid "Spending chart for {period}"
+msgstr ""
+
+#, python-brace-format
+msgid "Spending for {period}"
+msgstr ""
+
+msgid "Spending statistics"
+msgstr ""
+
+#, python-brace-format
+msgid "Spending — {period}"
+msgstr ""
+
+#, python-brace-format
+msgid "Spent this month: {amount} PLN ({pct})"
+msgstr ""
+
+msgid "Split a receipt with other people"
+msgstr ""
+
+msgid "Start and short intro"
+msgstr ""
+
+msgid "Store"
+msgstr ""
+
+msgid "Subscriptions"
+msgstr ""
+
+msgid "TOP 3 PRODUCTS OF THE YEAR"
+msgstr ""
+
+msgid "Tap the button to save all transactions to the database:"
+msgstr ""
+
+msgid "They were not added again."
+msgstr ""
+
+msgid "This month"
+msgstr ""
+
+msgid "This receipt has no items — it can't be split."
+msgstr ""
+
+msgid "This receipt's total is zero — splitting makes no sense."
+msgstr ""
+
+msgid "This week"
+msgstr ""
+
+msgid "This year"
+msgstr ""
+
+msgid "Today"
+msgstr ""
+
+#, python-brace-format
+msgid "Top stores — {period}"
+msgstr ""
+
+msgid "Total"
+msgstr ""
+
+msgid "Total PLN"
+msgstr ""
+
+#, python-brace-format
+msgid "Total per month: ~{amount} PLN"
+msgstr ""
+
+#, python-brace-format
+msgid "Total spent: *{amount} PLN*"
+msgstr ""
+
+#, python-brace-format
+msgid "Total: {transactions}, sum {amount} PLN"
+msgstr ""
+
+msgid "Transfer"
+msgstr ""
+
+msgid "Transfer to Revolut"
+msgstr ""
+
+msgid "Transport"
+msgstr ""
+
+msgid "Turn off"
+msgstr ""
+
+msgid "Turn on"
+msgstr ""
+
+msgid "Unknown store"
+msgstr ""
+
+msgid "Use /stats to see your statistics."
+msgstr ""
+
+msgid "Week"
+msgstr ""
+
+msgid "Weekly (Mon 02:00)"
+msgstr ""
+
+msgid ""
+"What should I look for? For example: 'Kaufland expenses in June' or "
+"'purchases over 200 złoty in May'"
+msgstr ""
+
+#, python-brace-format
+msgid "YEAR IN REVIEW {year}"
+msgstr ""
+
+msgid "Year"
+msgstr ""
+
+msgid "Year in review"
+msgstr ""
+
+#, python-brace-format
+msgid "bought {n} time"
+msgid_plural "bought {n} times"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "date unknown"
+msgstr ""
+
+msgid "no product data"
+msgstr ""
+
+#, python-brace-format
+msgid "spent this year · {transactions}"
+msgstr ""
+
+msgid "the month"
+msgstr ""
+
+msgid "the week"
+msgstr ""
+
+msgid "the year"
+msgstr ""
+
+msgid "unknown"
+msgstr ""
+
+msgid "unknown (single charge)"
+msgstr ""
+
+#, python-brace-format
+msgid "vs last month: {diff} {arrow}  (was {amount} PLN)"
+msgstr ""
+
+#, python-brace-format
+msgid "vs last week: {diff} {arrow}  (was {amount} PLN)"
+msgstr ""
+
+#, python-brace-format
+msgid "{amount} PLN/mo"
+msgstr ""
+
+#, python-brace-format
+msgid "{amount} PLN/month"
+msgstr ""
+
+#, python-brace-format
+msgid "{bought}, spent {amount} PLN"
+msgstr ""
+
+#, python-brace-format
+msgid "{n} budget"
+msgid_plural "{n} budgets"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-brace-format
+msgid "{n} day"
+msgid_plural "{n} days"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-brace-format
+msgid "{n} item"
+msgid_plural "{n} items"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-brace-format
+msgid "{n} receipt"
+msgid_plural "{n} receipts"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-brace-format
+msgid "{n} store"
+msgid_plural "{n} stores"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-brace-format
+msgid "{n} transaction"
+msgid_plural "{n} transactions"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-brace-format
+msgid "{n} visit"
+msgid_plural "{n} visits"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-brace-format
+msgid "{pct} of all spending"
+msgstr ""
+
+#, python-brace-format
+msgid "{qty} pcs"
+msgstr ""
+
+#, python-brace-format
+msgid "{qty}pcs"
+msgstr ""
+
+#, python-brace-format
+msgid "{year} — thanks for tracking with FinanceBot"
+msgstr ""
+
+msgid "⏳ Building statistics..."
+msgstr ""
+
+msgid "⏳ Building the CSV..."
+msgstr ""
+
+msgid "⏳ Building the comparison..."
+msgstr ""
+
+msgid "⏳ Converting the PDF to an image..."
+msgstr ""
+
+msgid "⏳ Downloading the file..."
+msgstr ""
+
+msgid "⏳ Parsing the Erste Bank Polska statement..."
+msgstr ""
+
+msgid "⏳ Parsing the Revolut statement..."
+msgstr ""
+
+msgid "⏳ Processing the receipt..."
+msgstr ""
+
+msgid "⏳ Saving transactions..."
+msgstr ""
+
+msgid "▶ Next"
+msgstr ""
+
+msgid "◀ Back"
+msgstr ""
+
+msgid "⚙️ *Report settings:*"
+msgstr ""
+
+#, python-brace-format
+msgid "⚠️ '{category}' budget {pct} used ({spent} / {limit} PLN)"
+msgstr ""
+
+#, python-brace-format
+msgid ""
+"⚠️ *Unusual expense*\n"
+"{amount} PLN at {store} — that's {multiplier}× the average receipt in the"
+" “{category}” category (usually ~{average} PLN)"
+msgstr ""
+
+#, python-brace-format
+msgid ""
+"⚠️ *{category} budget: {pct} spent!*\n"
+"{spent} / {limit} PLN — {remaining} PLN left"
+msgstr ""
+
+msgid "⚠️ Couldn't build the comparison. Please try later."
+msgstr ""
+
+#, python-brace-format
+msgid ""
+"⚠️ Found {n} possible duplicate — this transaction was already added "
+"manually:"
+msgid_plural ""
+"⚠️ Found {n} possible duplicates — these transactions were already added "
+"manually:"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "⚠️ Index error."
+msgstr ""
+
+msgid "⚠️ No transactions found. The export format may have changed."
+msgstr ""
+
+msgid "⚠️ No transactions found. The statement format may have changed."
+msgstr ""
+
+msgid "⚠️ Product not found."
+msgstr ""
+
+msgid "⚠️ Receipt not found."
+msgstr ""
+
+msgid "⚠️ Store not found."
+msgstr ""
+
+msgid "⚠️ The receipt total doesn't match the sum of the items."
+msgstr ""
+
+msgid "⚠️ The search session has expired. Run /search again."
+msgstr ""
+
+msgid "⚠️ The search used simplified rules — results may be inaccurate."
+msgstr ""
+
+msgid "⚠️ The session has expired. Open the list again."
+msgstr ""
+
+msgid "⚠️ The session has expired. Run /split again."
+msgstr ""
+
+msgid "⚠️ The session has expired. Run the search again."
+msgstr ""
+
+msgid ""
+"⚠️ This will delete ALL your data: transactions, receipts, settings.\n"
+"\n"
+"Send `/reset confirm` to confirm."
+msgstr ""
+
+msgid "✅ *Budget set!*"
+msgstr ""
+
+msgid "✅ *Receipt from PDF saved!*"
+msgstr ""
+
+msgid "✅ *Receipt saved!*"
+msgstr ""
+
+#, python-brace-format
+msgid "✅ *Saved {n} transaction!*"
+msgid_plural "✅ *Saved {n} transactions!*"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-brace-format
+msgid ""
+"✅ All data deleted. You can start over — upload a statement.\n"
+"\n"
+"_Deleted: {receipts}, {items}, {budgets}._"
+msgstr ""
+
+#, python-brace-format
+msgid "✅ Category updated: {category}"
+msgstr ""
+
+msgid "✅ Confirm"
+msgstr ""
+
+msgid "✅ Done"
+msgstr ""
+
+#, python-brace-format
+msgid "✅ Expense saved: *{amount}* (no store)"
+msgstr ""
+
+#, python-brace-format
+msgid "✅ Expense saved: *{amount}* at {store}"
+msgstr ""
+
+#, python-brace-format
+msgid "✅ Export ready — {n} row"
+msgid_plural "✅ Export ready — {n} rows"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-brace-format
+msgid "✅ Language changed: {language}"
+msgstr ""
+
+msgid "✅ Save all transactions"
+msgstr ""
+
+msgid "✅ Saved!"
+msgstr ""
+
+#, python-brace-format
+msgid "✅ Saved: *{name}*"
+msgstr ""
+
+msgid "✅ Transaction saved!"
+msgstr ""
+
+#, python-brace-format
+msgid "✅ Updated: statistics will now count *{new} PLN* instead of {old} PLN"
+msgstr ""
+
+msgid "✅ Yes"
+msgstr ""
+
+msgid ""
+"✏️ *Adding an expense manually*\n"
+"\n"
+"Enter the amount and currency (e.g. `25.50 PLN` or `8 EUR`):"
+msgstr ""
+
+msgid "✏️ Change category"
+msgstr ""
+
+msgid "❌ Action cancelled."
+msgstr ""
+
+msgid "❌ An unexpected error occurred. Try again or send /help"
+msgstr ""
+
+msgid "❌ Cancel"
+msgstr ""
+
+msgid "❌ Couldn't build the picture. Please try later."
+msgstr ""
+
+msgid "❌ Couldn't create the file. Please try again."
+msgstr ""
+
+msgid "❌ Couldn't download the file. Please try again."
+msgstr ""
+
+msgid "❌ Couldn't download the photo. Please try again."
+msgstr ""
+
+msgid "❌ Couldn't parse the file. Try another export."
+msgstr ""
+
+msgid "❌ Couldn't parse the statement. Try another file."
+msgstr ""
+
+msgid "❌ Couldn't read the PDF. Try another file."
+msgstr ""
+
+msgid "❌ Couldn't read the data. Upload the statement again."
+msgstr ""
+
+msgid ""
+"❌ Couldn't read the receipt in the PDF. Try sending a photo of the "
+"receipt or add the expense manually with /add"
+msgstr ""
+
+msgid ""
+"❌ Couldn't read the receipt. Try taking a sharper photo or add the "
+"expense manually with /add"
+msgstr ""
+
+msgid ""
+"❌ Couldn't recognize the file. Supported: Erste Bank Polska statements "
+"(PDF) and Revolut consolidated statements (CSV)."
+msgstr ""
+
+msgid "❌ Enter a valid amount, e.g. `500` or `1500.50`"
+msgstr ""
+
+msgid "❌ I didn't get the format. Enter it like: `25.50 PLN`"
+msgstr ""
+
+msgid "❌ Invalid date format. Enter *DD.MM.YYYY* or `/skip`:"
+msgstr ""
+
+msgid ""
+"❌ Invalid format. Enter the period as *DD.MM.YYYY-DD.MM.YYYY*\n"
+"For example: `01.05.2026-31.05.2026`\n"
+"\n"
+"Or /cancel to cancel."
+msgstr ""
+
+msgid "❌ No"
+msgstr ""
+
+msgid "❌ Saving cancelled."
+msgstr ""
+
+msgid "❌ Saving failed. Please try later."
+msgstr ""
+
+msgid "❌ Something went wrong while processing. Please try later."
+msgstr ""
+
+msgid "❌ The amount must be greater than zero."
+msgstr ""
+
+msgid "❌ The data has expired. Upload the statement again."
+msgstr ""
+
+msgid "❌ Unknown category"
+msgstr ""
+
+msgid "➕ Add a budget"
+msgstr ""
+
+msgid "➕ Add manually"
+msgstr ""
+
+msgid "➕ Set a budget"
+msgstr ""
+
+msgid "⬅ Back to options"
+msgstr ""
+
+msgid "⬅ Back to products"
+msgstr ""
+
+msgid "⬅ Back to stores"
+msgstr ""
+
+msgid "🌐 Choose the bot language:"
+msgstr ""
+
+#, python-brace-format
+msgid "🎉 Your {year} in FinanceBot!"
+msgstr ""
+
+#, python-brace-format
+msgid "🏆 Top category: {name} — {amount} PLN ({pct})"
+msgstr ""
+
+msgid "🏠 Main menu"
+msgstr ""
+
+msgid "🏠 Main menu. Send a receipt photo or use /stats, /budget, /export."
+msgstr ""
+
+msgid "🏦 *Erste Bank Polska — statement recognized*"
+msgstr ""
+
+#, python-brace-format
+msgid "🏪 *By store — {period}*"
+msgstr ""
+
+msgid "🏪 *Top 5 stores:*"
+msgstr ""
+
+msgid "🏪 *Top stores:*"
+msgstr ""
+
+msgid "🏪 By store"
+msgstr ""
+
+#, python-brace-format
+msgid "🏪 Spending by store for {period}"
+msgstr ""
+
+#, python-brace-format
+msgid "🏪 Store: {store}"
+msgstr ""
+
+#, python-brace-format
+msgid "🏪 Your most visited store: {store} ({n} time)"
+msgid_plural "🏪 Your most visited store: {store} ({n} times)"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-brace-format
+msgid "🏷 Category: {category}"
+msgstr ""
+
+msgid ""
+"👋 Hi! I'm *FinanceBot* — your personal expense tracker.\n"
+"\n"
+"*What I can do:*\n"
+"📸 Read receipts from photos\n"
+"📊 Build statistics and charts\n"
+"💰 Keep an eye on your budget\n"
+"📤 Export reports to Excel\n"
+"\n"
+"Just send me a photo of a receipt to get started!"
+msgstr ""
+
+#, python-brace-format
+msgid "💎 Most expensive receipt: {amount} PLN — {store}"
+msgstr ""
+
+msgid "💰 *Income:*"
+msgstr ""
+
+msgid "💰 Budget"
+msgstr ""
+
+msgid "💰 Choose a category to set a budget for:"
+msgstr ""
+
+#, python-brace-format
+msgid "💰 Income: {amount} PLN"
+msgstr ""
+
+#, python-brace-format
+msgid "💰 Total spent: *{amount} PLN*"
+msgstr ""
+
+#, python-brace-format
+msgid "💰 Total: *{amount} PLN*"
+msgstr ""
+
+#, python-brace-format
+msgid "💰 Total: {amount}"
+msgstr ""
+
+msgid "💱 *By currency:*"
+msgstr ""
+
+msgid "💳 *Revolut — consolidated statement recognized*"
+msgstr ""
+
+#, python-brace-format
+msgid ""
+"💳 Card payment abroad: {amount} {currency} ({amount_pln} PLN)\n"
+"What should this payment be called? Enter the store/service name:"
+msgstr ""
+
+#, python-brace-format
+msgid "💵 Cash withdrawals: *{amount} PLN*"
+msgstr ""
+
+msgid "💸 *Expenses:*"
+msgstr ""
+
+#, python-brace-format
+msgid "💸 Expenses: {amount} PLN"
+msgstr ""
+
+#, python-brace-format
+msgid "💸 Spent: *{amount} PLN*"
+msgstr ""
+
+#, python-brace-format
+msgid "💸 Spent: *{amount} PLN* in {n} transaction"
+msgid_plural "💸 Spent: *{amount} PLN* in {n} transactions"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-brace-format
+msgid "💸 Total spent: *{amount} PLN*"
+msgstr ""
+
+#, python-brace-format
+msgid "💸 Total: *{amount} PLN*"
+msgstr ""
+
+msgid "📂 *By category:*"
+msgstr ""
+
+#, python-brace-format
+msgid "📅 *Daily report — {date}*"
+msgstr ""
+
+msgid "📅 *Subscriptions*"
+msgstr ""
+
+msgid "📅 Choose a period:"
+msgstr ""
+
+#, python-brace-format
+msgid "📅 Date: {date}"
+msgstr ""
+
+msgid ""
+"📅 Enter the period as *DD.MM.YYYY-DD.MM.YYYY*\n"
+"For example: `01.05.2026-31.05.2026`"
+msgstr ""
+
+msgid "📅 Subscriptions"
+msgstr ""
+
+#, python-brace-format
+msgid "📈 *Monthly report — {month}*"
+msgstr ""
+
+msgid "📈 Daily chart"
+msgstr ""
+
+#, python-brace-format
+msgid "📈 End-of-month forecast: ~{amount} PLN (at the current spending rate)"
+msgstr ""
+
+#, python-brace-format
+msgid "📈 Most expensive month: {month} — {amount} PLN"
+msgstr ""
+
+#, python-brace-format
+msgid "📈 Spending trend for {period}"
+msgstr ""
+
+#, python-brace-format
+msgid "📊 *Statistics for {period}*"
+msgstr ""
+
+#, python-brace-format
+msgid "📊 *Weekly report — {start} – {end}*"
+msgstr ""
+
+msgid "📊 By category"
+msgstr ""
+
+msgid "📊 Export more"
+msgstr ""
+
+#, python-brace-format
+msgid "📊 Purchases found: *{count}*"
+msgstr ""
+
+msgid "📊 Spending statistics:"
+msgstr ""
+
+msgid "📊 Statistics"
+msgstr ""
+
+msgid "📊 Transactions"
+msgstr ""
+
+#, python-brace-format
+msgid "📊 Transactions found: *{count}*"
+msgstr ""
+
+msgid "📋 *Budget status:*"
+msgstr ""
+
+msgid "📋 *Budgets (current month):*"
+msgstr ""
+
+#, python-brace-format
+msgid "📋 *Budgets for {month}:*"
+msgstr ""
+
+msgid "📋 *Budgets:*"
+msgstr ""
+
+msgid ""
+"📋 *Commands:*\n"
+"\n"
+"📸 *Receipts*\n"
+"Just send a photo of a receipt — I'll read everything myself.\n"
+"\n"
+"📊 /stats — spending statistics (week / month / year)\n"
+"💰 /budget — budgets by category\n"
+"✏️ /add — add an expense manually\n"
+"📤 /export — export to an Excel file\n"
+"🔍 /search — search expenses in plain text (e.g. “Kaufland expenses in "
+"June”)\n"
+"🎁 /wrapped — your year in one picture\n"
+"👥 /split — split a receipt with other people\n"
+"🌐 /language — change language\n"
+"❌ /cancel — cancel the current action\n"
+"\n"
+"*Expense categories:*\n"
+"🛒 Groceries · ☕ Cafés · 💊 Pharmacy · 🚗 Transport\n"
+"📱 Electronics · 👕 Clothing · 🏠 Household · 📦 Other"
+msgstr ""
+
+msgid "📋 All products"
+msgstr ""
+
+msgid "📋 Show all budgets"
+msgstr ""
+
+msgid "📋 Show budgets"
+msgstr ""
+
+msgid ""
+"📤 *Data export*\n"
+"\n"
+"What do you want to export?"
+msgstr ""
+
+msgid "📦 *By category:*"
+msgstr ""
+
+#, python-brace-format
+msgid "📦 *Product statistics — {period}*"
+msgstr ""
+
+msgid "📦 Everything"
+msgstr ""
+
+#, python-brace-format
+msgid "📦 Items ({count}):"
+msgstr ""
+
+msgid "📦 Products"
+msgstr ""
+
+#, python-brace-format
+msgid "📦 Products — {period}"
+msgstr ""
+
+msgid "📭 No data for the selected period."
+msgstr ""
+
+msgid "🔁 *Frequently bought:*"
+msgstr ""
+
+#, python-brace-format
+msgid "🔄 *Comparison — {current} vs {previous}*"
+msgstr ""
+
+msgid "🔄 Choose a period to compare with the previous one:"
+msgstr ""
+
+msgid "🔄 Compare periods"
+msgstr ""
+
+msgid "🔍 *Search results*"
+msgstr ""
+
+msgid "🔍 Enter a product name:"
+msgstr ""
+
+msgid "🔍 Find a product"
+msgstr ""
+
+#, python-brace-format
+msgid "🚨 '{category}' budget exceeded ({spent} / {limit} PLN)"
+msgstr ""
+
+#, python-brace-format
+msgid ""
+"🚨 *{category} budget exceeded!*\n"
+"{spent} / {limit} PLN — over by {overage} PLN"
+msgstr ""
+
+#, python-brace-format
+msgid "🧴 Volume: *{volume}*"
+msgstr ""
+
+#, python-brace-format
+msgid "🧾 Number of receipts: *{count}*"
+msgstr ""
+
+msgid "🧾 Receipt items"
+msgstr ""
+
+#, python-brace-format
+msgid "🧾 Transactions: *{count}*"
+msgstr ""
+

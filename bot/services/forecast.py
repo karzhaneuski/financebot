@@ -4,6 +4,7 @@ from datetime import date, datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.db import crud
+from bot.i18n import _
 
 _MIN_DAYS_ELAPSED = 3
 
@@ -11,7 +12,7 @@ _MIN_DAYS_ELAPSED = 3
 async def get_month_forecast(session: AsyncSession, user_id: int) -> dict:
     today = datetime.utcnow().date()
     month_start = date(today.year, today.month, 1)
-    _, days_in_month = monthrange(today.year, today.month)
+    days_in_month = monthrange(today.year, today.month)[1]
     days_elapsed = (today - month_start).days + 1
 
     spent_so_far = await crud.get_expenses_total_range(session, user_id, month_start, today)
@@ -30,4 +31,4 @@ def format_forecast_line(forecast: dict) -> str | None:
     if forecast["days_elapsed"] < _MIN_DAYS_ELAPSED:
         return None
     amount = f"{round(forecast['projected_total']):,}".replace(",", " ")
-    return f"📈 Прогноз на конец месяца: ~{amount} PLN (при текущем темпе трат)"
+    return _("📈 End-of-month forecast: ~{amount} PLN (at the current spending rate)").format(amount=amount)

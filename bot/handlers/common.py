@@ -10,35 +10,40 @@ from bot.db.crud import delete_user_data
 from bot.handlers.budget import _show_budget_list
 from bot.handlers.manual import cmd_add
 from bot.handlers.stats import cmd_stats
+from bot.i18n import _, ngettext
 
 router = Router()
 
-WELCOME_TEXT = (
-    "👋 Привет! Я *FinanceBot* — твой личный трекер расходов.\n\n"
-    "*Что я умею:*\n"
-    "📸 Распознаю чеки по фото\n"
-    "📊 Строю статистику и графики\n"
-    "💰 Слежу за твоим бюджетом\n"
-    "📤 Экспортирую отчёты в Excel\n\n"
-    "Просто отправь мне фото чека, чтобы начать!"
-)
+def welcome_text() -> str:
+    return _(
+        "👋 Hi! I'm *FinanceBot* — your personal expense tracker.\n\n"
+        "*What I can do:*\n"
+        "📸 Read receipts from photos\n"
+        "📊 Build statistics and charts\n"
+        "💰 Keep an eye on your budget\n"
+        "📤 Export reports to Excel\n\n"
+        "Just send me a photo of a receipt to get started!"
+    )
 
-HELP_TEXT = (
-    "📋 *Список команд:*\n\n"
-    "📸 *Чеки*\n"
-    "Просто отправь фото чека — я всё распознаю сам.\n\n"
-    "📊 /stats — статистика расходов (неделя / месяц / год)\n"
-    "💰 /budget — управление бюджетами по категориям\n"
-    "✏️ /add — добавить расход вручную\n"
-    "📤 /export — экспорт в Excel-файл\n"
-    "🔍 /search — поиск трат обычным текстом (например, «траты в Kaufland за июнь»)\n"
-    "🎁 /wrapped — итоги года одной картинкой\n"
-    "👥 /split — разделить чек с другими людьми\n"
-    "❌ /cancel — отменить текущее действие\n\n"
-    "*Категории расходов:*\n"
-    "🛒 Продукты · ☕ Кафе · 💊 Аптека · 🚗 Транспорт\n"
-    "📱 Электроника · 👕 Одежда · 🏠 Дом/Быт · 📦 Прочее"
-)
+
+def help_text() -> str:
+    return _(
+        "📋 *Commands:*\n\n"
+        "📸 *Receipts*\n"
+        "Just send a photo of a receipt — I'll read everything myself.\n\n"
+        "📊 /stats — spending statistics (week / month / year)\n"
+        "💰 /budget — budgets by category\n"
+        "✏️ /add — add an expense manually\n"
+        "📤 /export — export to an Excel file\n"
+        "🔍 /search — search expenses in plain text (e.g. “Kaufland expenses in June”)\n"
+        "🎁 /wrapped — your year in one picture\n"
+        "👥 /split — split a receipt with other people\n"
+        "🌐 /language — change language\n"
+        "❌ /cancel — cancel the current action\n\n"
+        "*Expense categories:*\n"
+        "🛒 Groceries · ☕ Cafés · 💊 Pharmacy · 🚗 Transport\n"
+        "📱 Electronics · 👕 Clothing · 🏠 Household · 📦 Other"
+    )
 
 
 # Callback buttons that open the section right away. (They used to be
@@ -47,18 +52,18 @@ HELP_TEXT = (
 def _start_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text="📊 Статистика", callback_data="start:stats"),
-        InlineKeyboardButton(text="💰 Бюджет", callback_data="start:budget"),
+        InlineKeyboardButton(text=_("📊 Statistics"), callback_data="start:stats"),
+        InlineKeyboardButton(text=_("💰 Budget"), callback_data="start:budget"),
     )
     builder.row(
-        InlineKeyboardButton(text="➕ Добавить вручную", callback_data="start:add"),
+        InlineKeyboardButton(text=_("➕ Add manually"), callback_data="start:add"),
     )
     return builder.as_markup()
 
 
 @router.message(Command("start"))
 async def cmd_start(message: Message) -> None:
-    await message.answer(WELCOME_TEXT, parse_mode="Markdown", reply_markup=_start_keyboard())
+    await message.answer(welcome_text(), parse_mode="Markdown", reply_markup=_start_keyboard())
 
 
 @router.callback_query(F.data.startswith("start:"))
@@ -79,17 +84,17 @@ async def start_menu_callback(call: CallbackQuery, state: FSMContext, session: A
 
 @router.message(Command("help"))
 async def cmd_help(message: Message) -> None:
-    await message.answer(HELP_TEXT, parse_mode="Markdown")
+    await message.answer(help_text(), parse_mode="Markdown")
 
 
 @router.message(Command("cancel"))
 async def cmd_cancel(message: Message, state: FSMContext) -> None:
     current = await state.get_state()
     if current is None:
-        await message.answer("Нет активного действия для отмены.")
+        await message.answer(_("Nothing to cancel."))
         return
     await state.clear()
-    await message.answer("❌ Действие отменено.")
+    await message.answer(_("❌ Action cancelled."))
 
 
 @router.message(Command("reset"))
@@ -99,8 +104,10 @@ async def cmd_reset(message: Message, state: FSMContext, session: AsyncSession, 
 
     if not confirm:
         await message.answer(
-            "⚠️ Это удалит ВСЕ твои данные: транзакции, чеки, настройки.\n\n"
-            "Отправь `/reset confirm` чтобы подтвердить.",
+            _(
+                "⚠️ This will delete ALL your data: transactions, receipts, settings.\n\n"
+                "Send `/reset confirm` to confirm."
+            ),
             parse_mode="Markdown",
         )
         return
@@ -116,8 +123,13 @@ async def cmd_reset(message: Message, state: FSMContext, session: AsyncSession, 
         await redis.delete(key_pattern)
 
     await message.answer(
-        "✅ Все данные удалены. Можешь начать заново — загрузи выписку.\n\n"
-        f"_Удалено: {counts['receipts']} чеков, {counts['items']} позиций, "
-        f"{counts['budgets']} бюджетов._",
+        _(
+            "✅ All data deleted. You can start over — upload a statement.\n\n"
+            "_Deleted: {receipts}, {items}, {budgets}._"
+        ).format(
+            receipts=ngettext("{n} receipt", "{n} receipts", counts["receipts"]).format(n=counts["receipts"]),
+            items=ngettext("{n} item", "{n} items", counts["items"]).format(n=counts["items"]),
+            budgets=ngettext("{n} budget", "{n} budgets", counts["budgets"]).format(n=counts["budgets"]),
+        ),
         parse_mode="Markdown",
     )

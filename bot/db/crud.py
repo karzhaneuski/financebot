@@ -3,11 +3,13 @@ from calendar import monthrange
 from datetime import date, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import delete, func, or_, select
+from sqlalchemy import delete, exists, func, or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from bot.db.models import Budget, Category, Item, Receipt, ReportSettings
+from bot import markers
+from bot.db.models import Budget, Category, Item, Receipt, ReportSettings, User
 
 
 def _get_since(period_key: str) -> date | None:
@@ -21,6 +23,12 @@ def _get_since(period_key: str) -> date | None:
 def _personal_pln_col():
     """Personal expense amount: split share when set, else the full total (Feature 3)."""
     return func.coalesce(Receipt.personal_total_pln, Receipt.total_pln)
+
+
+def _store_key():
+    """Receipt.store with legacy Russian bot-generated names mapped to their
+    language-neutral markers, so old and new rows group together."""
+    return markers.canonical_sql(Receipt.store)
 
 
 def _personal_item_filter():
@@ -89,13 +97,13 @@ async def get_items_grouped(session: AsyncSession, user_id: int, days: int) -> l
     since = datetime.utcnow().date() - timedelta(days=days)
     stmt = (
         select(
-            Item.name,
+            markers.canonical_sql(Item.name).label("name"),
             func.sum(Item.quantity).label("total_quantity"),
             func.sum(Item.total_price).label("total_pln"),
         )
         .join(Receipt, Item.receipt_id == Receipt.id)
         .where(Receipt.user_id == user_id, Receipt.date >= since)
-        .group_by(Item.name)
+        .group_by(markers.canonical_sql(Item.name))
         .order_by(func.sum(Item.total_price).desc())
     )
     result = await session.execute(stmt)
@@ -122,7 +130,7 @@ async def get_spending_by_store(session: AsyncSession, user_id: int, days: int) 
     since = datetime.utcnow().date() - timedelta(days=days)
     stmt = (
         select(
-            Receipt.store,
+            _store_key().label("store"),
             func.sum(_personal_pln_col()).label("total_pln"),
             func.count(Receipt.id).label("visits"),
         )
@@ -132,7 +140,7 @@ async def get_spending_by_store(session: AsyncSession, user_id: int, days: int) 
             Receipt.store.isnot(None),
             (Receipt.tx_type != "cash_withdrawal") | Receipt.tx_type.is_(None),
         )
-        .group_by(Receipt.store)
+        .group_by(_store_key())
         .order_by(func.sum(_personal_pln_col()).desc())
     )
     result = await session.execute(stmt)
@@ -276,7 +284,7 @@ async def create_bank_transactions(
 
         item = Item(
             receipt_id=receipt.id,
-            name=description or "Оплата картой за рубежом",
+            name=description or markers.FOREIGN_CARD_PAYMENT,
             quantity=1,
             unit_price=total_pln,
             total_price=total_pln,
@@ -560,12 +568,12 @@ async def get_store_stats_by_period(session: AsyncSession, user_id: int, period_
 
     stmt = (
         select(
-            Receipt.store,
+            _store_key().label("store"),
             func.sum(_personal_pln_col()).label("total_pln"),
             func.count(Receipt.id).label("visits"),
         )
         .where(*conditions)
-        .group_by(Receipt.store)
+        .group_by(_store_key())
         .order_by(func.sum(_personal_pln_col()).desc())
     )
     result = await session.execute(stmt)
@@ -649,7 +657,7 @@ async def get_spending_by_store_range(
     session: AsyncSession, user_id: int, date_from: date, date_to: date
 ) -> list[dict[str, Any]]:
     stmt = (
-        select(Receipt.store, func.sum(_personal_pln_col()).label("total_pln"), func.count(Receipt.id).label("visits"))
+        select(_store_key().label("store"), func.sum(_personal_pln_col()).label("total_pln"), func.count(Receipt.id).label("visits"))
         .where(
             Receipt.user_id == user_id,
             Receipt.date >= date_from,
@@ -657,7 +665,7 @@ async def get_spending_by_store_range(
             Receipt.store.isnot(None),
             (Receipt.tx_type != "cash_withdrawal") | Receipt.tx_type.is_(None),
         )
-        .group_by(Receipt.store)
+        .group_by(_store_key())
         .order_by(func.sum(_personal_pln_col()).desc())
     )
     result = await session.execute(stmt)
@@ -832,7 +840,7 @@ async def get_recent_receipts(session: AsyncSession, user_id: int, limit: int) -
 
 async def get_store_products(session: AsyncSession, user_id: int, store: str, period_key: str) -> list[dict[str, Any]]:
     since = _get_since(period_key)
-    conditions = [Receipt.user_id == user_id, Receipt.store == store, Receipt.photo_file_id.isnot(None)]
+    conditions = [Receipt.user_id == user_id, _store_key() == store, Receipt.photo_file_id.isnot(None)]
     if since:
         conditions.append(Receipt.date >= since)
 
@@ -930,7 +938,7 @@ async def get_subscriptions(session: AsyncSession, user_id: int) -> list[dict[st
 
     groups: dict[str, list[Receipt]] = {}
     for r in receipts:
-        groups.setdefault(_merchant_group_key(r.store), []).append(r)
+        groups.setdefault(_merchant_group_key(markers.canonical(r.store)), []).append(r)
 
     today = datetime.utcnow().date()
     results: list[dict[str, Any]] = []
@@ -978,7 +986,7 @@ async def get_subscriptions(session: AsyncSession, user_id: int) -> list[dict[st
             # reverts to unknown rather than projecting into a series that stopped.
 
         results.append({
-            "store": min((r.store for r in group), key=len),
+            "store": min((markers.canonical(r.store) for r in group), key=len),
             "amount": float(latest.total),
             "currency": latest.currency,
             "last_charge": latest.date,
@@ -1137,3 +1145,72 @@ async def get_recent_receipts_with_items(
     # Prefer receipts from the last 7 days; fall back to plain most recent.
     recent = [r for r in rows if r.date and r.date >= week_ago]
     return (recent or rows)[:limit]
+
+
+# ── users & language ─────────────────────────────────────────────────────────
+
+async def has_legacy_data(session: AsyncSession, user_id: int) -> bool:
+    """True if the user has any row predating the users table (receipts,
+    budgets or report settings)."""
+    stmt = select(
+        exists().where(Receipt.user_id == user_id)
+        | exists().where(Budget.user_id == user_id)
+        | exists().where(ReportSettings.user_id == user_id)
+    )
+    return bool((await session.execute(stmt)).scalar())
+
+
+async def get_user_language(session: AsyncSession, user_id: int) -> str | None:
+    user = await session.get(User, user_id)
+    return user.language if user else None
+
+
+async def get_or_create_user_language(session: AsyncSession, user_id: int, language_code: str | None) -> str:
+    """Stored language of the user; on first contact create the row.
+
+    Anyone who already has data is a pre-localization user and gets Russian,
+    everyone else gets their Telegram language (English if unsupported).
+    """
+    from bot.i18n import LEGACY_LANGUAGE, detect_language
+
+    user = await session.get(User, user_id)
+    if user is not None:
+        return user.language
+
+    language = LEGACY_LANGUAGE if await has_legacy_data(session, user_id) else detect_language(language_code)
+    try:
+        async with session.begin_nested():
+            session.add(User(user_id=user_id, language=language))
+    except IntegrityError:
+        # Created concurrently by another update — use what won the race.
+        user = await session.get(User, user_id, populate_existing=True)
+        return user.language if user else language
+    return language
+
+
+async def get_languages_for_users(session: AsyncSession, user_ids: list[int]) -> dict[int, str]:
+    """{user_id: language} for users with a stored language."""
+    if not user_ids:
+        return {}
+    stmt = select(User.user_id, User.language).where(User.user_id.in_(user_ids))
+    return {row.user_id: row.language for row in await session.execute(stmt)}
+
+
+async def set_user_language(session: AsyncSession, user_id: int, language: str) -> None:
+    user = await session.get(User, user_id)
+    if user is None:
+        session.add(User(user_id=user_id, language=language))
+    else:
+        user.language = language
+    await session.flush()
+
+
+async def resolve_user_language(session: AsyncSession, user_id: int) -> str:
+    """Language for messages sent outside an update (scheduler, alerts):
+    the stored one, else Russian for users with data, else the fallback."""
+    from bot.i18n import FALLBACK_LANGUAGE, LEGACY_LANGUAGE
+
+    language = await get_user_language(session, user_id)
+    if language:
+        return language
+    return LEGACY_LANGUAGE if await has_legacy_data(session, user_id) else FALLBACK_LANGUAGE

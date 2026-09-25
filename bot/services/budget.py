@@ -5,6 +5,7 @@ from aiogram import Bot
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.db import crud
+from bot.i18n import _
 from bot.utils.formatters import format_category, format_month, format_pln
 
 logger = logging.getLogger(__name__)
@@ -42,11 +43,11 @@ async def get_budget_summary(session: AsyncSession, user_id: int) -> str:
     month = datetime.utcnow().strftime("%Y-%m")
     budgets = await crud.get_budgets(session, user_id, month)
     if not budgets:
-        return "Бюджеты не установлены. Используй /budget чтобы добавить."
+        return _("No budgets set. Use /budget to add one.")
 
     spent_map = await crud.get_monthly_spending_by_category(session, user_id, month)
 
-    lines = [f"📋 *Бюджеты на {format_month(month)}:*\n"]
+    lines = [_("📋 *Budgets for {month}:*").format(month=format_month(month)) + "\n"]
     for b in budgets:
         cat = b.category.value
         limit = float(b.limit_pln)
@@ -79,15 +80,15 @@ async def get_budget_status_text(session: AsyncSession, user_id: int, category: 
     emoji = CATEGORY_EMOJI.get(category, "")
 
     lines = [
-        f"✅ *Бюджет установлен!*",
-        f"{emoji} {format_category(category)} — {limit:.2f} PLN/месяц",
+        _("✅ *Budget set!*"),
+        f"{emoji} {format_category(category)} — " + _("{amount} PLN/month").format(amount=f"{limit:.2f}"),
         "",
-        f"Потрачено в этом месяце: {spent:.2f} PLN ({pct}%)",
+        _("Spent this month: {amount} PLN ({pct})").format(amount=f"{spent:.2f}", pct=f"{pct}%"),
     ]
     if spent < limit:
-        lines.append(f"Осталось: {limit - spent:.2f} PLN")
+        lines.append(_("Remaining: {amount} PLN").format(amount=f"{limit - spent:.2f}"))
     else:
-        lines.append(f"Превышение: {spent - limit:.2f} PLN 🚨")
+        lines.append(_("Over by: {amount} PLN").format(amount=f"{spent - limit:.2f}") + " 🚨")
 
     return "\n".join(lines)
 
@@ -114,8 +115,11 @@ async def check_and_notify_budgets(session: AsyncSession, user_id: int, bot: Bot
                 overage = spent - limit
                 await bot.send_message(
                     user_id,
-                    f"🚨 *Бюджет на {format_category(cat)} превышен!*\n"
-                    f"{spent:.2f} / {limit:.2f} PLN — превышение на {overage:.2f} PLN",
+                    _("🚨 *{category} budget exceeded!*\n"
+                      "{spent} / {limit} PLN — over by {overage} PLN").format(
+                        category=format_category(cat), spent=f"{spent:.2f}", limit=f"{limit:.2f}",
+                        overage=f"{overage:.2f}",
+                    ),
                     parse_mode="Markdown",
                 )
                 budget.last_notified_pct = 100
@@ -123,8 +127,11 @@ async def check_and_notify_budgets(session: AsyncSession, user_id: int, bot: Bot
                 remaining = limit - spent
                 await bot.send_message(
                     user_id,
-                    f"⚠️ *Бюджет на {format_category(cat)}: потрачено {pct:.0f}%!*\n"
-                    f"{spent:.2f} / {limit:.2f} PLN — осталось {remaining:.2f} PLN",
+                    _("⚠️ *{category} budget: {pct} spent!*\n"
+                      "{spent} / {limit} PLN — {remaining} PLN left").format(
+                        category=format_category(cat), pct=f"{pct:.0f}%", spent=f"{spent:.2f}",
+                        limit=f"{limit:.2f}", remaining=f"{remaining:.2f}",
+                    ),
                     parse_mode="Markdown",
                 )
                 budget.last_notified_pct = 80
@@ -150,11 +157,15 @@ async def check_budget_alerts(session: AsyncSession, user_id: int) -> list[str]:
 
         if spent >= limit:
             warnings.append(
-                f"🚨 Бюджет на '{format_category(cat)}' превышен ({spent:.2f} / {limit:.2f} PLN)"
+                _("🚨 '{category}' budget exceeded ({spent} / {limit} PLN)").format(
+                    category=format_category(cat), spent=f"{spent:.2f}", limit=f"{limit:.2f}"
+                )
             )
         elif spent >= limit * 0.8:
             warnings.append(
-                f"⚠️ Бюджет на '{format_category(cat)}' использован на {pct:.0f}% ({spent:.2f} / {limit:.2f} PLN)"
+                _("⚠️ '{category}' budget {pct} used ({spent} / {limit} PLN)").format(
+                    category=format_category(cat), pct=f"{pct:.0f}%", spent=f"{spent:.2f}", limit=f"{limit:.2f}"
+                )
             )
 
     return warnings

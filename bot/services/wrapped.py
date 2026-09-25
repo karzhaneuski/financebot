@@ -11,7 +11,11 @@ from matplotlib.patches import FancyBboxPatch
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.db import crud
-from bot.services.charts import CATEGORY_RU, PALETTE
+from bot.categories import category_label
+from bot.i18n import _, ngettext
+from bot.markers import display_name
+from bot.services.charts import PALETTE
+from bot.utils.formatters import format_day_month, month_name
 
 logger = logging.getLogger(__name__)
 
@@ -93,8 +97,7 @@ async def collect_wrapped_stats(session: AsyncSession, user_id: int, year: int |
 def render_wrapped_image(stats: dict) -> bytes:
     """Render all Wrapped stats onto a single canvas (matches charts.py style)."""
     year = stats["year"]
-    months_short = ["янв", "фев", "мар", "апр", "май", "июн",
-                    "июл", "авг", "сен", "окт", "ноя", "дек"]
+    months_short = _short_month_labels()
 
     # Content occupies y >= 0.24 in figure fractions, so a shorter canvas
     # simply crops the dead band instead of squashing the layout.
@@ -112,9 +115,9 @@ def render_wrapped_image(stats: dict) -> bytes:
 
     # ── Header ────────────────────────────────────────────────────────────
     header = ax_at(0, 0.93, 1, 0.07)
-    header.text(0.5, 0.55, f"ГОД В ИТОГЕ {year}", ha="center", fontsize=26,
+    header.text(0.5, 0.55, _("YEAR IN REVIEW {year}").format(year=year), ha="center", fontsize=26,
                 fontweight="bold", color=_TEXT, transform=header.transAxes)
-    header.text(0.5, 0.08, "FinanceBot · твой личный год в цифрах", ha="center",
+    header.text(0.5, 0.08, _("FinanceBot · your personal year in numbers"), ha="center",
                 fontsize=11, color="#8A8885", transform=header.transAxes)
 
     # ── Total card ────────────────────────────────────────────────────────
@@ -123,8 +126,9 @@ def render_wrapped_image(stats: dict) -> bytes:
     total_str = f"{stats['total']:,.0f}".replace(",", " ")
     card_total.text(0.5, 0.72, f"{total_str} PLN", ha="center", fontsize=30,
                     fontweight="bold", color=_TEXT, transform=card_total.transAxes)
-    tx_word = "транзакций" if 11 <= stats['tx_count'] % 100 <= 19 else ("транзакции" if stats['tx_count'] % 10 == 1 else "транзакций")
-    card_total.text(0.5, 0.22, f"потрачено за год · {stats['tx_count']} {tx_word}",
+    tx_count = stats["tx_count"]
+    tx_words = ngettext("{n} transaction", "{n} transactions", tx_count).format(n=tx_count)
+    card_total.text(0.5, 0.22, _("spent this year · {transactions}").format(transactions=tx_words),
                     ha="center", fontsize=12, color="#8A8885", transform=card_total.transAxes)
 
     # ── Top category + priciest receipt ───────────────────────────────────
@@ -134,24 +138,24 @@ def render_wrapped_image(stats: dict) -> bytes:
     cat = stats.get("top_category")
     if cat:
         pct = round(cat["total_pln"] / stats["total"] * 100)
-        name = CATEGORY_RU.get(cat["category"], cat["category"])
-        row1.text(0.27, 0.75, "ЛЮБИМАЯ КАТЕГОРИЯ", ha="center", fontsize=9,
+        name = category_label(cat["category"])
+        row1.text(0.27, 0.75, _("FAVOURITE CATEGORY"), ha="center", fontsize=9,
                   color="#8A8885", transform=row1.transAxes)
         cat_amt = f"{cat['total_pln']:,.0f}".replace(",", " ")
         row1.text(0.27, 0.48, f"{name} — {cat_amt} PLN",
                   ha="center", fontsize=13, fontweight="bold", color=_TEXT, transform=row1.transAxes)
-        row1.text(0.27, 0.20, f"{pct}% всех трат", ha="center", fontsize=10,
+        row1.text(0.27, 0.20, _("{pct} of all spending").format(pct=f"{pct}%"), ha="center", fontsize=10,
                   color="#8A8885", transform=row1.transAxes)
     else:
-        row1.text(0.27, 0.5, "Категории не определены", ha="center", fontsize=11,
+        row1.text(0.27, 0.5, _("No categories yet"), ha="center", fontsize=11,
                   color="#8A8885", transform=row1.transAxes)
 
     priciest = stats.get("priciest")
     if priciest is not None:
         d = priciest.date
         date_str = f"{d.day} {months_short[d.month - 1]}" if d else ""
-        store = (priciest.store or "?")[:16]
-        row1.text(0.73, 0.75, "САМЫЙ ДОРОГОЙ ЧЕК", ha="center", fontsize=9,
+        store = (display_name(priciest.store) or "?")[:16]
+        row1.text(0.73, 0.75, _("MOST EXPENSIVE RECEIPT"), ha="center", fontsize=9,
                   color="#8A8885", transform=row1.transAxes)
         priciest_amt = f"{priciest.personal_amount():,.0f}".replace(",", " ")
         row1.text(0.73, 0.48, f"{priciest_amt} PLN",
@@ -162,7 +166,7 @@ def render_wrapped_image(stats: dict) -> bytes:
     # ── Monthly bar chart ─────────────────────────────────────────────────
     row2 = ax_at(0, 0.50, 1, 0.15)
     _card(fig, 0.06, 0.515, 0.88, 0.13)
-    row2.text(0.5, 0.92, "Траты по месяцам", ha="center", fontsize=11,
+    row2.text(0.5, 0.92, _("Spending by month"), ha="center", fontsize=11,
               fontweight="bold", color=_TEXT, transform=row2.transAxes)
     bars_ax = fig.add_axes([0.12, 0.535, 0.76, 0.08])
     bars_ax.set_zorder(2)         # paint above the card patch
@@ -184,16 +188,16 @@ def render_wrapped_image(stats: dict) -> bytes:
     visited = stats.get("most_visited")
     if visited:
         visits = visited["visits"]
-        v_word = "визитов" if 11 <= visits % 100 <= 19 else ("визит" if visits % 10 == 1 else "визита")
+        visits_str = ngettext("{n} visit", "{n} visits", visits).format(n=visits)
         visited_amt = f"{visited['total_pln']:,.0f}".replace(",", " ")
-        row3.text(0.5, 0.88, f"Самый частый магазин: {visited['store'][:24]} — {visits} {v_word}, "
-                             f"{visited_amt} PLN",
+        row3.text(0.5, 0.88, _("Most visited store: {store} — {visits}, {amount} PLN").format(
+                      store=display_name(visited["store"])[:24], visits=visits_str, amount=visited_amt),
                   ha="center", fontsize=11, fontweight="bold", color=_TEXT, transform=row3.transAxes)
     else:
-        row3.text(0.5, 0.88, "Магазины не определены", ha="center", fontsize=11,
+        row3.text(0.5, 0.88, _("No stores yet"), ha="center", fontsize=11,
                   color="#8A8885", transform=row3.transAxes)
 
-    row3.text(0.5, 0.66, "ТОП-3 ПРОДУКТА ГОДА", ha="center", fontsize=9,
+    row3.text(0.5, 0.66, _("TOP 3 PRODUCTS OF THE YEAR"), ha="center", fontsize=9,
               color="#8A8885", transform=row3.transAxes)
     products = stats.get("products") or []
     y = 0.45
@@ -205,14 +209,14 @@ def render_wrapped_image(stats: dict) -> bytes:
                   ha="right", transform=row3.transAxes)
         y -= 0.18
     if not products:
-        row3.text(0.5, y, "нет данных по продуктам", ha="center", fontsize=10,
+        row3.text(0.5, y, _("no product data"), ha="center", fontsize=10,
                   color="#8A8885", transform=row3.transAxes)
 
     # ── Footer ────────────────────────────────────────────────────────────
     footer = ax_at(0, 0.24, 1, 0.05)
     # ✨ (U+2728) has no glyph in DejaVu Sans — renders as a missing box on the
     # canvas. Use plain text; the caption (Telegram-rendered) keeps its emoji.
-    footer.text(0.5, 0.4, f"{year} — спасибо, что считал с FinanceBot",
+    footer.text(0.5, 0.4, _("{year} — thanks for tracking with FinanceBot").format(year=year),
                 ha="center", fontsize=12, color="#8A8885", transform=footer.transAxes)
 
     buf = io.BytesIO()
@@ -223,40 +227,48 @@ def render_wrapped_image(stats: dict) -> bytes:
 
 
 def build_wrapped_caption(stats: dict) -> str:
-    """Short celebratory Russian caption mirroring the image numbers."""
+    """Short celebratory caption mirroring the image numbers."""
     year = stats["year"]
     total_str = f"{stats['total']:,.2f}".replace(",", " ")
-    lines = [f"🎉 Твой {year} год в FinanceBot!",
-             f"💸 Потрачено: *{total_str} PLN* за {stats['tx_count']} транзакций"]
+    tx_count = stats["tx_count"]
+    lines = [_("🎉 Your {year} in FinanceBot!").format(year=year),
+             ngettext("💸 Spent: *{amount} PLN* in {n} transaction",
+                      "💸 Spent: *{amount} PLN* in {n} transactions", tx_count).format(amount=total_str, n=tx_count)]
 
     cat = stats.get("top_category")
     if cat:
         pct = round(cat["total_pln"] / stats["total"] * 100)
-        name = CATEGORY_RU.get(cat["category"], cat["category"])
+        name = category_label(cat["category"])
         cat_amt = f"{cat['total_pln']:,.0f}".replace(",", " ")
-        lines.append(f"🏆 Топ-категория: {name} — {cat_amt} PLN ({pct}%)")
+        lines.append(_("🏆 Top category: {name} — {amount} PLN ({pct})").format(name=name, amount=cat_amt, pct=f"{pct}%"))
 
     priciest = stats.get("priciest")
     if priciest is not None:
         d = priciest.date
-        date_part = f", {d.day} {MONTHS_SHORT[d.month - 1]}" if d else ""
+        date_part = f", {format_day_month(d)}" if d else ""
         priciest_amt = f"{priciest.personal_amount():,.2f}".replace(",", " ")
-        lines.append(f"💎 Самый дорогой чек: {priciest_amt} PLN — "
-                     f"{priciest.store or '?'}{date_part}")
+        lines.append(_("💎 Most expensive receipt: {amount} PLN — {store}").format(
+            amount=priciest_amt, store=display_name(priciest.store) or "?") + date_part)
 
     visited = stats.get("most_visited")
     if visited:
-        lines.append(f"🏪 Чаще всего ты ходил(а) в {visited['store']} ({visited['visits']} раз)")
+        visits = visited["visits"]
+        lines.append(ngettext("🏪 Your most visited store: {store} ({n} time)",
+                              "🏪 Your most visited store: {store} ({n} times)", visits).format(
+            store=display_name(visited["store"]), n=visits))
 
     top_m = stats.get("top_month_idx")
     if top_m is not None:
-        from bot.utils.formatters import MONTHS_NOMINATIVE
         m_amount = f"{stats['monthly'][top_m]:,.0f}".replace(",", " ")
-        lines.append(f"📈 Самый затратный месяц: {MONTHS_NOMINATIVE[top_m]} — {m_amount} PLN")
+        lines.append(_("📈 Most expensive month: {month} — {amount} PLN").format(
+            month=month_name(top_m + 1), amount=m_amount))
 
-    lines.append("\nПоделись картинкой со статистикой года 😉")
+    lines.append("\n" + _("Share the picture with your year stats 😉"))
     return "\n".join(lines)
 
 
-MONTHS_SHORT = ["янв", "фев", "мар", "апр", "мая", "июн",
-                "июл", "авг", "сен", "окт", "ноя", "дек"]
+
+def _short_month_labels() -> list[str]:
+    """Short month names for the monthly bar chart axis."""
+    return [_("Jan"), _("Feb"), _("Mar"), _("Apr"), _("May"), _("Jun"),
+            _("Jul"), _("Aug"), _("Sep"), _("Oct"), _("Nov"), _("Dec")]

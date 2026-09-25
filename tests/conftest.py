@@ -44,6 +44,16 @@ def offline_llm(monkeypatch):
     llm.reset_provider()
 
 
+@pytest.fixture(autouse=True)
+def ru_locale():
+    """Tests written before localization assert on Russian output; run them in
+    the Russian locale (what every pre-existing user keeps)."""
+    from bot.i18n import i18n
+
+    with i18n.use_locale("ru"):
+        yield
+
+
 @pytest_asyncio.fixture
 async def db_session():
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")

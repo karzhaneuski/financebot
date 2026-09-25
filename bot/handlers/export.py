@@ -11,7 +11,9 @@ from aiogram.types import BufferedInputFile, CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.db import crud
+from bot.i18n import _, ngettext
 from bot.keyboards.inline import export_done_keyboard, export_period_keyboard, export_type_keyboard
+from bot.markers import display_name
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -58,7 +60,7 @@ def _build_transactions_csv(receipts: list) -> str:
         )
         writer.writerow([
             r.date.isoformat() if r.date else "",
-            r.store or "",
+            display_name(r.store) or "",
             float(r.total_pln),
             r.currency or "PLN",
             category,
@@ -75,9 +77,9 @@ def _build_items_csv(rows: list) -> str:
     for row in rows:
         writer.writerow([
             row.date.isoformat() if row.date else "",
-            row.store or "",
-            row.name,
-            row.normalized_name or row.name.lower().strip(),
+            display_name(row.store) or "",
+            display_name(row.name),
+            row.normalized_name or display_name(row.name).lower().strip(),
             float(row.quantity),
             float(row.unit_price) if row.unit_price is not None else "",
             float(row.total_price),
@@ -97,7 +99,7 @@ def _build_all_csv(receipts: list, item_rows: list) -> str:
         writer.writerow([
             "transaction",
             r.date.isoformat() if r.date else "",
-            r.store or "",
+            display_name(r.store) or "",
             "",
             float(r.total_pln),
             category,
@@ -107,7 +109,7 @@ def _build_all_csv(receipts: list, item_rows: list) -> str:
         writer.writerow([
             "item",
             row.date.isoformat() if row.date else "",
-            row.store or "",
+            display_name(row.store) or "",
             row.name,
             float(row.total_price),
             row.category.value,
@@ -126,7 +128,7 @@ async def _send_csv(
     msg = target if isinstance(target, Message) else target.message
     user_id = target.from_user.id
 
-    status = await msg.answer("⏳ Формирую CSV...")
+    status = await msg.answer(_("⏳ Building the CSV..."))
     try:
         if export_type == "transactions":
             receipts = await crud.get_transactions_for_export(session, user_id, date_from, date_to)
@@ -143,14 +145,14 @@ async def _send_csv(
             count = len(receipts) + len(item_rows)
     except Exception as e:
         logger.error(f"CSV export failed: {e}", exc_info=True)
-        await status.edit_text("❌ Не удалось создать файл. Попробуй ещё раз.")
+        await status.edit_text(_("❌ Couldn't create the file. Please try again."))
         return
 
     await status.delete()
 
     if count == 0:
         await msg.answer(
-            "📭 За выбранный период данных нет.",
+            _("📭 No data for the selected period."),
             reply_markup=export_done_keyboard(),
         )
         return
@@ -158,7 +160,7 @@ async def _send_csv(
     filename = _filename(export_type, date_from, date_to)
     await msg.answer_document(
         BufferedInputFile(csv_text.encode("utf-8-sig"), filename=filename),
-        caption=f"✅ Экспорт готов — {count} строк",
+        caption=ngettext("✅ Export ready — {n} row", "✅ Export ready — {n} rows", count).format(n=count),
         reply_markup=export_done_keyboard(),
     )
 
@@ -167,7 +169,7 @@ async def _send_csv(
 async def cmd_export(message: Message, state: FSMContext) -> None:
     await state.clear()
     await message.answer(
-        "📤 *Экспорт данных*\n\nЧто экспортировать?",
+        _("📤 *Data export*\n\nWhat do you want to export?"),
         parse_mode="Markdown",
         reply_markup=export_type_keyboard(),
     )
@@ -177,7 +179,7 @@ async def cmd_export(message: Message, state: FSMContext) -> None:
 async def cb_export_type(callback: CallbackQuery, state: FSMContext) -> None:
     export_type = callback.data.split(":", 1)[1]
     await callback.message.edit_text(
-        "📅 Выбери период:",
+        _("📅 Choose a period:"),
         reply_markup=export_period_keyboard(export_type),
     )
     await callback.answer()
@@ -185,14 +187,14 @@ async def cb_export_type(callback: CallbackQuery, state: FSMContext) -> None:
 
 @router.callback_query(F.data.startswith("export_period:"))
 async def cb_export_period(callback: CallbackQuery, state: FSMContext, session: AsyncSession) -> None:
-    _, export_type, period = callback.data.split(":", 2)
+    _prefix, export_type, period = callback.data.split(":", 2)
 
     if period == "custom":
         await state.set_state(ExportStates.waiting_dates)
         await state.update_data(export_type=export_type)
         await callback.message.edit_text(
-            "📅 Введите период в формате *ДД.ММ.ГГГГ-ДД.ММ.ГГГГ*\n"
-            "Например: `01.05.2026-31.05.2026`",
+            _("📅 Enter the period as *DD.MM.YYYY-DD.MM.YYYY*\n"
+              "For example: `01.05.2026-31.05.2026`"),
             parse_mode="Markdown",
         )
         await callback.answer()
@@ -219,9 +221,9 @@ async def handle_custom_dates(message: Message, state: FSMContext, session: Asyn
             raise ValueError("start > end")
     except Exception:
         await message.answer(
-            "❌ Неверный формат. Введи период в виде *ДД.ММ.ГГГГ-ДД.ММ.ГГГГ*\n"
-            "Например: `01.05.2026-31.05.2026`\n\n"
-            "Или /cancel для отмены.",
+            _("❌ Invalid format. Enter the period as *DD.MM.YYYY-DD.MM.YYYY*\n"
+              "For example: `01.05.2026-31.05.2026`\n\n"
+              "Or /cancel to cancel."),
             parse_mode="Markdown",
         )
         await state.set_state(ExportStates.waiting_dates)
@@ -236,12 +238,12 @@ async def cb_export_done(callback: CallbackQuery, state: FSMContext) -> None:
     action = callback.data.split(":", 1)[1]
     if action == "again":
         await callback.message.edit_text(
-            "📤 *Экспорт данных*\n\nЧто экспортировать?",
+            _("📤 *Data export*\n\nWhat do you want to export?"),
             parse_mode="Markdown",
             reply_markup=export_type_keyboard(),
         )
     else:
         await callback.message.edit_text(
-            "🏠 Главное меню. Отправь фото чека или воспользуйся командами /stats, /budget, /export.",
+            _("🏠 Main menu. Send a receipt photo or use /stats, /budget, /export."),
         )
     await callback.answer()

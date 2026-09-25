@@ -9,6 +9,7 @@ from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.db.crud import delete_budget, get_budgets, set_budget
+from bot.i18n import _
 from bot.keyboards.inline import (
     budget_category_keyboard,
     budget_delete_confirm_keyboard,
@@ -49,7 +50,7 @@ async def handle_budget_set_cat(callback: CallbackQuery, state: FSMContext) -> N
     await state.set_state(BudgetSetStates.waiting_amount)
     await callback.answer()
     await callback.message.edit_text(
-        f"Введите лимит для категории *{format_category(category)}* на месяц (PLN):",
+        _("Enter the monthly limit for *{category}* (PLN):").format(category=format_category(category)),
         parse_mode="Markdown",
     )
 
@@ -58,7 +59,7 @@ async def handle_budget_set_cat(callback: CallbackQuery, state: FSMContext) -> N
 async def handle_budget_amount(message: Message, state: FSMContext, session: AsyncSession) -> None:
     if message.text.strip() == "/cancel":
         await state.clear()
-        await message.answer("Отменено.")
+        await message.answer(_("Cancelled."))
         return
 
     try:
@@ -66,7 +67,7 @@ async def handle_budget_amount(message: Message, state: FSMContext, session: Asy
         if amount <= 0:
             raise ValueError
     except ValueError:
-        await message.answer("❌ Введи корректную сумму, например: `500` или `1500.50`", parse_mode="Markdown")
+        await message.answer(_("❌ Enter a valid amount, e.g. `500` or `1500.50`"), parse_mode="Markdown")
         return
 
     data = await state.get_data()
@@ -96,12 +97,14 @@ async def handle_budget_del(callback: CallbackQuery, session: AsyncSession) -> N
 
     await callback.answer()
     if not budget:
-        await callback.message.edit_text("Бюджет не найден.")
+        await callback.message.edit_text(_("Budget not found."))
         return
 
     limit = float(budget.limit_pln)
     await callback.message.edit_text(
-        f"Удалить бюджет *{format_category(category)}* ({format_pln(limit)}/мес)?",
+        _("Delete the *{category}* budget ({limit}/month)?").format(
+            category=format_category(category), limit=format_pln(limit)
+        ),
         parse_mode="Markdown",
         reply_markup=budget_delete_confirm_keyboard(category),
     )
@@ -113,7 +116,7 @@ async def handle_budget_del_confirm(callback: CallbackQuery, session: AsyncSessi
     month = datetime.utcnow().strftime("%Y-%m")
     await delete_budget(session, callback.from_user.id, category, month)
     await session.flush()
-    await callback.answer(f"Бюджет удалён", show_alert=False)
+    await callback.answer(_("Budget deleted"), show_alert=False)
     await _show_budget_list(callback, session, callback.from_user.id)
 
 
@@ -134,7 +137,7 @@ async def handle_budget_show(callback: CallbackQuery, session: AsyncSession) -> 
 async def handle_budget_set_start(callback: CallbackQuery) -> None:
     await callback.answer()
     await callback.message.edit_text(
-        "💰 Выбери категорию для установки бюджета:",
+        _("💰 Choose a category to set a budget for:"),
         reply_markup=budget_category_keyboard(),
     )
 
@@ -146,6 +149,6 @@ async def handle_budget_category_legacy(callback: CallbackQuery, state: FSMConte
     await state.set_state(BudgetSetStates.waiting_amount)
     await callback.answer()
     await callback.message.edit_text(
-        f"Введи лимит для *{format_category(category)}* в злотых (PLN):",
+        _("Enter the limit for *{category}* in złoty (PLN):").format(category=format_category(category)),
         parse_mode="Markdown",
     )

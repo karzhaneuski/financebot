@@ -6,6 +6,8 @@ from openpyxl.utils import get_column_letter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.db import crud
+from bot.i18n import _
+from bot.markers import display_name
 from bot.utils.formatters import format_category
 
 _HEADER_FILL = PatternFill(start_color="AEC6CF", end_color="AEC6CF", fill_type="solid")
@@ -32,13 +34,13 @@ async def build_excel(session: AsyncSession, user_id: int) -> io.BytesIO:
 
     # --- Sheet 1: Receipts ---
     ws1 = wb.active
-    ws1.title = "Чеки"
-    _apply_header(ws1, ["Дата", "Магазин", "Итого", "Валюта", "Итого PLN"])
+    ws1.title = _("Receipts")
+    _apply_header(ws1, [_("Date"), _("Store"), _("Total"), _("Currency"), _("Total PLN")])
 
     for r in receipts:
         ws1.append([
             r.date.strftime("%d.%m.%Y") if r.date else "",
-            r.store or "",
+            display_name(r.store) or "",
             float(r.total),
             r.currency,
             float(r.total_pln),
@@ -47,17 +49,17 @@ async def build_excel(session: AsyncSession, user_id: int) -> io.BytesIO:
     _autowidth(ws1)
 
     # --- Sheet 2: Items ---
-    ws2 = wb.create_sheet("Товары")
-    _apply_header(ws2, ["Дата", "Магазин", "Товар", "Кол-во", "Цена", "Итого", "Категория"])
+    ws2 = wb.create_sheet(_("Items"))
+    _apply_header(ws2, [_("Date"), _("Store"), _("Item"), _("Qty"), _("Price"), _("Total"), _("Category")])
 
     for r in receipts:
         date_str = r.date.strftime("%d.%m.%Y") if r.date else ""
-        store_str = r.store or ""
+        store_str = display_name(r.store) or ""
         for item in r.items:
             ws2.append([
                 date_str,
                 store_str,
-                item.name,
+                display_name(item.name),
                 float(item.quantity),
                 float(item.unit_price) if item.unit_price is not None else "",
                 float(item.total_price),

@@ -11,16 +11,16 @@ REQUIRED_ITEM_KEYS = {"name", "quantity", "total_price"}
 def validate_receipt(data: dict[str, Any]) -> dict[str, Any]:
     missing = REQUIRED_KEYS - set(data.keys())
     if missing:
-        raise ValueError(f"Отсутствуют обязательные поля: {missing}")
+        raise ValueError(f"Missing required fields: {missing}")
 
     if not isinstance(data.get("items"), list) or len(data["items"]) == 0:
-        raise ValueError("Поле 'items' должно быть непустым списком")
+        raise ValueError("Field 'items' must be a non-empty list")
 
     cleaned_items = []
     for i, item in enumerate(data["items"]):
         item_missing = REQUIRED_ITEM_KEYS - set(item.keys())
         if item_missing:
-            raise ValueError(f"Позиция {i}: отсутствуют поля {item_missing}")
+            raise ValueError(f"Item {i}: missing fields {item_missing}")
 
         cleaned_item = {
             "name": item["name"],

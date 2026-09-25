@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.api.auth import get_current_user
-from bot.api.categories import CATEGORY_META
-from bot.api.deps import get_db
+from bot.api.categories import category_meta
+from bot.api.deps import get_db, get_user_language
 from bot.db import crud
 
 router = APIRouter()
@@ -15,6 +15,7 @@ router = APIRouter()
 async def get_budgets(
     user_id: int = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    language: str = Depends(get_user_language),
 ):
     month = date.today().strftime("%Y-%m")
     budgets = await crud.get_budgets(db, user_id, month)
@@ -23,7 +24,7 @@ async def get_budgets(
     result = []
     for b in budgets:
         cat = b.category.value
-        name, emoji = CATEGORY_META.get(cat, (cat, "📦"))
+        name, emoji = category_meta(cat, language)
         spent = spending.get(cat, 0.0)
         limit = float(b.limit_pln)
         pct = round(spent / limit * 100) if limit > 0 else 0

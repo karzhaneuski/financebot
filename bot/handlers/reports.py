@@ -5,13 +5,14 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.db.crud import get_report_settings, set_report_setting
+from bot.i18n import _, __
 
 router = Router()
 
 REPORT_LABELS = {
-    "daily": "Ежедневный (02:00)",
-    "weekly": "Еженедельный (пн 02:00)",
-    "monthly": "Ежемесячный (1-е 02:00)",
+    "daily": __("Daily (02:00)"),
+    "weekly": __("Weekly (Mon 02:00)"),
+    "monthly": __("Monthly (1st, 02:00)"),
 }
 
 
@@ -20,7 +21,7 @@ def _reports_keyboard(daily: bool, weekly: bool, monthly: bool) -> InlineKeyboar
     for field, label in REPORT_LABELS.items():
         enabled = {"daily": daily, "weekly": weekly, "monthly": monthly}[field]
         status = "✅" if enabled else "❌"
-        action_label = "Выключить" if enabled else "Включить"
+        action_label = _("Turn off") if enabled else _("Turn on")
         builder.row(
             InlineKeyboardButton(text=f"{status} {label}", callback_data=f"report_noop:{field}"),
             InlineKeyboardButton(text=action_label, callback_data=f"report_toggle:{field}"),
@@ -31,7 +32,7 @@ def _reports_keyboard(daily: bool, weekly: bool, monthly: bool) -> InlineKeyboar
 async def _show_settings(target: Message | CallbackQuery, session: AsyncSession, user_id: int) -> None:
     settings = await get_report_settings(session, user_id)
     keyboard = _reports_keyboard(settings.daily_enabled, settings.weekly_enabled, settings.monthly_enabled)
-    text = "⚙️ *Настройка отчётов:*"
+    text = _("⚙️ *Report settings:*")
 
     if isinstance(target, CallbackQuery):
         await target.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
