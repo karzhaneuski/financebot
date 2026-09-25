@@ -71,8 +71,9 @@ Before filling `.env`:
 
 ## LLM provider (Gemini / Anthropic)
 
-Receipt photos, PDF receipts, bank screenshots and `/search` queries go to
-the provider selected by `LLM_PROVIDER` (`gemini` by default, or `anthropic`).
+Receipt photos, PDF receipts, bank screenshots, item-name normalization and
+`/search` queries go to the provider selected by `LLM_PROVIDER` (`gemini` by
+default, or `anthropic`).
 
 **Gemini (default):**
 
@@ -82,8 +83,9 @@ the provider selected by `LLM_PROVIDER` (`gemini` by default, or `anthropic`).
    structured output, free tier — checked against ai.google.dev on
    2026-09-25). Google publishes free-tier limits only per account: open
    AI Studio → **Rate limits** and check requests/day for this model. Each
-   receipt photo costs **two** requests (bank-screenshot detection, then
-   receipt parsing); a PDF receipt or a `/search` query costs one.
+   receipt photo costs **three** requests (bank-screenshot detection,
+   receipt parsing, item-name normalization); a PDF receipt two; a bank
+   screenshot or a `/search` query one.
    If the daily limit is too low, switch `GEMINI_MODEL` to a Flash-Lite model
    from the same page (e.g. `gemini-3.5-flash-lite`) and re-check quality.
 3. **Privacy:** on the free tier Google may use submitted content — here,
@@ -99,9 +101,8 @@ auth/billing or an outage, users get "recognition temporarily unavailable —
 add the expense with /add or upload a bank statement" instead of a generic
 error; the cause is logged by `bot` (`dc logs bot | grep -i "provider unavailable"`).
 
-Item-name normalization (`bot/services/normalization.py`) still uses
-Anthropic only; without a working Anthropic key receipts are saved with the
-raw item names (product statistics group less well).
+If only item-name normalization fails (quota hit mid-receipt), the receipt
+is still saved, with raw item names (product statistics group less well).
 
 ## 3. First start with data from the dump
 

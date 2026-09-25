@@ -3,9 +3,7 @@ import logging
 import sys
 import traceback
 
-import anthropic
-
-from bot.config import settings
+from bot.services.llm import LLMUnavailableError, get_provider
 
 logger = logging.getLogger(__name__)
 
@@ -59,25 +57,40 @@ Output: [
 ]"""
 
 
+# Same shape as the array the prompt asks for (enforced by Gemini).
+NORMALIZATION_SCHEMA = {
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "original": {"type": "string"},
+            "normalized": {"type": "string"},
+            "volume_ml": {"type": ["integer", "null"]},
+        },
+        "required": ["original", "normalized", "volume_ml"],
+    },
+}
+
+
 async def normalize_item_names(items: list[dict]) -> list[dict]:
-    """Enrich each item dict in-place with 'normalized_name' and 'volume_ml'. Falls back to lowercased name on error."""
+    """Enrich each item dict in-place with 'normalized_name' and 'volume_ml'.
+
+    Falls back to the lowercased raw name when the LLM provider is
+    unavailable or answers badly — the receipt is always saved.
+    """
     if not items:
         return items
 
     names = [item.get("name", "") for item in items]
 
     try:
-        client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
-        response = await client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=2048,
+        parsed = await get_provider().generate_json(
             system=_SYSTEM,
-            messages=[{"role": "user", "content": json.dumps(names, ensure_ascii=False)}],
+            prompt=json.dumps(names, ensure_ascii=False),
+            schema=NORMALIZATION_SCHEMA,
+            tier="fast",
+            max_tokens=2048,
         )
-        raw = response.content[0].text.strip()
-        if raw.startswith("```"):
-            raw = raw.split("\n", 1)[1].rsplit("```", 1)[0].strip()
-        parsed = json.loads(raw)
         if isinstance(parsed, list) and len(parsed) == len(items):
             for item, entry in zip(items, parsed):
                 if isinstance(entry, dict):
@@ -89,7 +102,11 @@ async def normalize_item_names(items: list[dict]) -> list[dict]:
                     item["normalized_name"] = str(entry).lower().strip()
                     item["volume_ml"] = None
             return items
-        logger.warning("Normalization returned unexpected length: %d vs %d", len(parsed), len(items))
+        logger.warning("Normalization returned unexpected shape: %s (%d items expected)",
+                       type(parsed).__name__, len(items))
+    except LLMUnavailableError as e:
+        # Expected while quota/balance is exhausted — no traceback per receipt.
+        logger.warning("Normalization skipped, LLM provider unavailable: %s", e)
     except Exception as e:
         print(f"Normalization error: {e}", file=sys.stderr)
         traceback.print_exc(file=sys.stderr)

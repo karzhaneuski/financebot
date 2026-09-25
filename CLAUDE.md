@@ -11,7 +11,8 @@ User sends a photo of a receipt → the vision LLM (Gemini by default, or Claude
 - **Cache / FSM state**: Redis 7
 - **AI parsing**: provider abstraction `bot/services/llm.py` — Google Gemini
   (default, `google-genai`, structured output, `GEMINI_MODEL`) or Anthropic
-  Claude (`claude-sonnet-5` vision, Haiku for search); `LLM_PROVIDER=gemini|anthropic`
+  Claude (`claude-sonnet-5` vision, Haiku for search and item-name
+  normalization); `LLM_PROVIDER=gemini|anthropic`
 - **Currency rates**: exchangerate-api.com (free tier, cached in Redis 1h)
 - **Charts**: matplotlib
 - **Excel export**: openpyxl
@@ -199,7 +200,7 @@ BOT_TOKEN=
 LLM_PROVIDER=gemini             # or anthropic
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-3.8-flash
-ANTHROPIC_API_KEY=             # only for LLM_PROVIDER=anthropic (+ normalization)
+ANTHROPIC_API_KEY=             # only for LLM_PROVIDER=anthropic
 EXCHANGE_API_KEY=
 POSTGRES_USER=
 POSTGRES_PASSWORD=
