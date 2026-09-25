@@ -2,7 +2,8 @@
 
 from bot.parsers.revolut import is_revolut_statement, parse_revolut_csv
 
-# Small synthetic excerpt mirroring the real "Сводные данные" export shape:
+# Small synthetic excerpt mirroring the real "Сводные данные" (consolidated
+# statement) export shape:
 # an account-summary block (balances only, must be skipped) followed by a
 # transaction-statement block with two purchases and one currency-exchange
 # row (must be skipped).
@@ -65,8 +66,9 @@ class TestParseRevolutCsv:
         csv_bytes = (HEADER_TEXT + SAMPLE_CSV).encode("utf-8")
         transactions = parse_revolut_csv(csv_bytes)
 
-        # Only the two "Торговая точка" rows should survive — the account-
-        # summary block and the "Обмен валюты" row must both be skipped.
+        # Only the two "Торговая точка" (merchant) rows should survive — the
+        # account-summary block and the "Обмен валюты" (currency exchange) row
+        # must both be skipped.
         assert len(transactions) == 2
         descriptions = {t["description"] for t in transactions}
         assert descriptions == {"MobiMatter", "Celestara"}

@@ -3,10 +3,11 @@
 The export is not a flat transaction table — it's a sequence of blocks
 separated by "---------" divider lines: first one account-summary block per
 account (balances only, skipped), then one transaction-statement block per
-account ("Личный счет (CCY)" → "Выписка по операциям" → header → rows →
-"Итого"). Column layout varies per block: an account whose native currency
-is PLN gets 8 columns (no duplicate PLN-equivalent pair, since native ==
-PLN already); every foreign-currency account gets the full 13 columns
+account ("Личный счет (CCY)" = personal account → "Выписка по операциям" =
+transaction statement → header → rows → "Итого" = total). Column layout
+varies per block: an account whose native currency is PLN gets 8 columns
+(no duplicate PLN-equivalent pair, since native == PLN already); every
+foreign-currency account gets the full 13 columns
 (native/PLN pairs for amount, balance, tax, other-tax, fee). The header row
 itself is used to locate the amount column(s) rather than hardcoding an
 offset, so both shapes parse correctly.

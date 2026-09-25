@@ -124,7 +124,7 @@ async def test_recat_message_matches_save_message_for_foreign_currency(db_sessio
 async def test_receipt_photo_amount_matches_recat_amount(db_session):
     """The OCR receipt-photo card and the post-recat edit render the amount
     through the same helper, so a foreign-currency receipt reads identically in
-    both (the '💰 Итого:' line and the '🏪 ...' line carry the same value)."""
+    both (the '💰 Итого:' (Total) line and the '🏪 ...' line carry the same value)."""
     parsed = {
         "store": "Kaufland",
         "date": "2026-08-30",

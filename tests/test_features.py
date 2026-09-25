@@ -356,7 +356,7 @@ async def test_search_limit_and_fallback_flag_parsing(no_llm):
 
 async def test_fallback_month_requires_preposition(no_llm):
     from bot.services.search_parser import parse_search_query
-    # A month-like word without за/в/на before it must not create a date filter.
+    # A month-like word without за/в/на (for/in/on) before it must not create a date filter.
     parsed, _ = await parse_search_query("траты Marta", today=date(2026, 8, 24))
     assert "date_from" not in parsed
     parsed, _ = await parse_search_query("траты в марте", today=date(2026, 8, 24))

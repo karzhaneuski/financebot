@@ -1,8 +1,8 @@
 """Language-neutral markers for store/item names the bot itself generates.
 
-Earlier versions stored Russian text ("Снятие наличных", "Расход", ...) as
-store or item names. New records store a marker instead and it is translated
-at display time. Old rows are left untouched: their Russian values are treated
+Earlier versions stored Russian text ("Снятие наличных" = cash withdrawal,
+"Расход" = expense, ...) as store or item names. New records store a marker
+instead and it is translated at display time. Old rows are left untouched: their Russian values are treated
 as aliases of the matching marker, both for display and for grouping in SQL,
 so old and new rows aggregate together.
 """
