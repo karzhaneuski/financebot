@@ -1,14 +1,14 @@
-# Translations template for FinanceBot.
+# Translations template for PROJECT.
 # Copyright (C) 2026 ORGANIZATION
-# This file is distributed under the same license as the FinanceBot project.
+# This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: FinanceBot VERSION\n"
+"Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-25 18:53+0300\n"
+"POT-Creation-Date: 2026-09-26 00:30+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -56,6 +56,15 @@ msgid "... and {n} more item"
 msgid_plural "... and {n} more items"
 msgstr[0] ""
 msgstr[1] ""
+
+msgid "30 days"
+msgstr ""
+
+msgid "365 days"
+msgstr ""
+
+msgid "7 days"
+msgstr ""
 
 msgid "Add an expense manually"
 msgstr ""
@@ -233,15 +242,6 @@ msgid "Jul"
 msgstr ""
 
 msgid "Jun"
-msgstr ""
-
-msgid "Last month"
-msgstr ""
-
-msgid "Last week"
-msgstr ""
-
-msgid "Last year"
 msgstr ""
 
 msgid "List of commands"

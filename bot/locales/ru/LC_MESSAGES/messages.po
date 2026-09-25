@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: FinanceBot VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-25 18:53+0300\n"
+"POT-Creation-Date: 2026-09-26 00:30+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -59,6 +59,15 @@ msgid_plural "... and {n} more items"
 msgstr[0] "... и ещё {n} позиция"
 msgstr[1] "... и ещё {n} позиции"
 msgstr[2] "... и ещё {n} позиций"
+
+msgid "30 days"
+msgstr "За месяц"
+
+msgid "365 days"
+msgstr "За год"
+
+msgid "7 days"
+msgstr "За неделю"
 
 msgid "Add an expense manually"
 msgstr "Добавить расход вручную"
@@ -238,15 +247,6 @@ msgstr "июл"
 
 msgid "Jun"
 msgstr "июн"
-
-msgid "Last month"
-msgstr "За месяц"
-
-msgid "Last week"
-msgstr "За неделю"
-
-msgid "Last year"
-msgstr "За год"
 
 msgid "List of commands"
 msgstr "Список команд"
@@ -1349,7 +1349,4 @@ msgstr "🧾 Товары из чеков"
 #, python-brace-format
 msgid "🧾 Transactions: *{count}*"
 msgstr "🧾 Транзакций: *{count}*"
-
-#~ msgid "✅ Confirm"
-#~ msgstr "✅ Подтвердить"
 

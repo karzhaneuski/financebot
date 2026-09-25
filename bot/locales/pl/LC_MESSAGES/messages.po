@@ -7,12 +7,13 @@ msgid ""
 msgstr ""
 "Project-Id-Version: FinanceBot VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-25 18:53+0300\n"
+"POT-Creation-Date: 2026-09-26 00:30+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
 "Language-Team: pl <LL@li.org>\n"
-"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && "
+"(n%100<10 || n%100>=20) ? 1 : 2);\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -27,18 +28,18 @@ msgid "  — income: {count} pcs. totalling *{amount} PLN*"
 msgstr "  — przychody: {count} szt. na łączną kwotę *{amount} PLN*"
 
 msgid "(home currency)"
-msgstr "(waluta domowa)"
+msgstr "(waluta główna)"
 
 #, python-brace-format
 msgid "(showing the first {n} matches)"
-msgstr "(pokazano pierwsze {n} dopasowań)"
+msgstr "(pokazano pierwszych {n} dopasowań)"
 
 #, python-brace-format
 msgid "*All time:* {amount} PLN, {qty} pcs"
-msgstr "*Cały czas:* {amount} PLN, {qty} szt"
+msgstr "*Cały okres:* {amount} PLN, {qty} szt."
 
 msgid "*By currency:*"
-msgstr "*Według waluty:*"
+msgstr "*Według walut:*"
 
 msgid "*By store:*"
 msgstr "*Według sklepu:*"
@@ -59,6 +60,15 @@ msgstr[0] "... i jeszcze {n} pozycja"
 msgstr[1] "... i jeszcze {n} pozycje"
 msgstr[2] "... i jeszcze {n} pozycji"
 
+msgid "30 days"
+msgstr "30 dni"
+
+msgid "365 days"
+msgstr "365 dni"
+
+msgid "7 days"
+msgstr "7 dni"
+
 msgid "Add an expense manually"
 msgstr "Dodaj wydatek ręcznie"
 
@@ -66,7 +76,7 @@ msgid "Akademik"
 msgstr "Akademik"
 
 msgid "All time"
-msgstr "Cały czas"
+msgstr "Cały okres"
 
 msgid "Apr"
 msgstr "kwi"
@@ -76,7 +86,7 @@ msgstr "sie"
 
 #, python-brace-format
 msgid "Bought: *{qty} pcs*"
-msgstr "Kupiono: *{qty} szt*"
+msgstr "Kupiono: *{qty} szt.*"
 
 msgid "Budget deleted"
 msgstr "Budżet usunięty"
@@ -131,7 +141,7 @@ msgid "Currency"
 msgstr "Waluta"
 
 msgid "Custom dates"
-msgstr "Podaj daty"
+msgstr "Własny zakres"
 
 msgid "Daily (02:00)"
 msgstr "Codziennie (02:00)"
@@ -238,15 +248,6 @@ msgstr "lip"
 msgid "Jun"
 msgstr "cze"
 
-msgid "Last month"
-msgstr "Za miesiąc"
-
-msgid "Last week"
-msgstr "Za tydzień"
-
-msgid "Last year"
-msgstr "Za rok"
-
 msgid "List of commands"
 msgstr "Lista poleceń"
 
@@ -258,11 +259,13 @@ msgstr "mar"
 
 #, python-brace-format
 msgid ""
-"Mark what was bought *for you* (receipt of {total} {currency} ≈ {total_pln} PLN):\n"
+"Mark what was bought *for you* (receipt of {total} {currency} ≈ "
+"{total_pln} PLN):\n"
 "\n"
 "Yours right now: *{personal} PLN*"
 msgstr ""
-"Zaznacz, co kupiono *dla Ciebie* (paragon na {total} {currency} ≈ {total_pln} PLN):\n"
+"Zaznacz, co kupiono *dla Ciebie* (paragon na {total} {currency} ≈ "
+"{total_pln} PLN):\n"
 "\n"
 "Twoje obecnie: *{personal} PLN*"
 
@@ -321,8 +324,12 @@ msgstr "W tym miesiącu nie było wydatków 🎉"
 msgid "No spending this week 🎉"
 msgstr "W tym tygodniu nie było wydatków 🎉"
 
-msgid "No spending this year yet 🤷 Add receipts — and get your summary at the end of the year!"
-msgstr "W tym roku nie ma jeszcze wydatków 🤷 Dodawaj paragony — a na koniec roku otrzymasz podsumowanie!"
+msgid ""
+"No spending this year yet 🤷 Add receipts — and get your summary at the "
+"end of the year!"
+msgstr ""
+"W tym roku nie ma jeszcze wydatków 🤷 Dodawaj paragony — a na koniec roku "
+"otrzymasz podsumowanie!"
 
 msgid "No spending yesterday 🎉"
 msgstr "Wczoraj nie było wydatków 🎉"
@@ -466,7 +473,7 @@ msgstr "Dzisiaj"
 
 #, python-brace-format
 msgid "Top stores — {period}"
-msgstr "Najlepsze sklepy — {period}"
+msgstr "Top sklepy — {period}"
 
 msgid "Total"
 msgstr "Razem"
@@ -513,8 +520,12 @@ msgstr "Tydzień"
 msgid "Weekly (Mon 02:00)"
 msgstr "Co tydzień (pon. 02:00)"
 
-msgid "What should I look for? For example: 'Kaufland expenses in June' or 'purchases over 200 złoty in May'"
-msgstr "Czego mam szukać? Na przykład: 'wydatki w Kaufland w czerwcu' albo 'zakupy powyżej 200 złotych w maju'"
+msgid ""
+"What should I look for? For example: 'Kaufland expenses in June' or "
+"'purchases over 200 złoty in May'"
+msgstr ""
+"Czego mam szukać? Na przykład: 'wydatki w Kaufland w czerwcu' albo "
+"'zakupy powyżej 200 złotych w maju'"
 
 #, python-brace-format
 msgid "YEAR IN REVIEW {year}"
@@ -553,7 +564,7 @@ msgid "the year"
 msgstr "rok"
 
 msgid "unknown"
-msgstr "nieznane"
+msgstr "nieznana"
 
 msgid "unknown (single charge)"
 msgstr "nieznane (jednorazowe obciążenie)"
@@ -633,11 +644,11 @@ msgstr "{pct} wszystkich wydatków"
 
 #, python-brace-format
 msgid "{qty} pcs"
-msgstr "{qty} szt"
+msgstr "{qty} szt."
 
 #, python-brace-format
 msgid "{qty}pcs"
-msgstr "{qty}szt"
+msgstr "{qty} szt."
 
 #, python-brace-format
 msgid "{year} — thanks for tracking with FinanceBot"
@@ -667,8 +678,14 @@ msgstr "⏳ Analizuję wyciąg Revolut..."
 msgid "⏳ Processing the receipt..."
 msgstr "⏳ Przetwarzam paragon..."
 
-msgid "⏳ Receipt recognition is temporarily unavailable. You can add the expense manually with /add or upload a bank statement (Erste PDF or Revolut CSV)."
-msgstr "⏳ Rozpoznawanie paragonów jest tymczasowo niedostępne. Możesz dodać wydatek ręcznie poleceniem /add lub przesłać wyciąg bankowy (Erste PDF lub Revolut CSV)."
+msgid ""
+"⏳ Receipt recognition is temporarily unavailable. You can add the expense"
+" manually with /add or upload a bank statement (Erste PDF or Revolut "
+"CSV)."
+msgstr ""
+"⏳ Rozpoznawanie paragonów jest tymczasowo niedostępne. Możesz dodać "
+"wydatek ręcznie poleceniem /add lub przesłać wyciąg bankowy (Erste PDF "
+"lub Revolut CSV)."
 
 msgid "⏳ Saving transactions..."
 msgstr "⏳ Zapisuję transakcje..."
@@ -689,28 +706,40 @@ msgstr "⚠️ Budżet '{category}' wykorzystany w {pct} ({spent} / {limit} PLN)
 #, python-brace-format
 msgid ""
 "⚠️ *Unusual expense*\n"
-"{amount} PLN at {store} — that's {multiplier}× the average receipt in the “{category}” category (usually ~{average} PLN)"
+"{amount} PLN at {store} — that's {multiplier}× the average receipt in the"
+" “{category}” category (usually ~{average} PLN)"
 msgstr ""
 "⚠️ *Nietypowy wydatek*\n"
-"{amount} PLN w {store} — to {multiplier}× więcej niż średni paragon w kategorii „{category}” (zwykle ~{average} PLN)"
+"{amount} PLN w {store} — to {multiplier}× więcej niż średni paragon w "
+"kategorii „{category}” (zwykle ~{average} PLN)"
 
 #, python-brace-format
 msgid ""
 "⚠️ *{category} budget: {pct} spent!*\n"
 "{spent} / {limit} PLN — {remaining} PLN left"
 msgstr ""
-"⚠️ *Budżet {category}: wydano {pct}!*\n"
+"⚠️ *Budżet „{category}”: wydano {pct}!*\n"
 "{spent} / {limit} PLN — pozostało {remaining} PLN"
 
 msgid "⚠️ Couldn't build the comparison. Please try later."
 msgstr "⚠️ Nie udało się utworzyć porównania. Spróbuj później."
 
 #, python-brace-format
-msgid "⚠️ Found {n} possible duplicate — this transaction was already added manually:"
-msgid_plural "⚠️ Found {n} possible duplicates — these transactions were already added manually:"
-msgstr[0] "⚠️ Znaleziono {n} możliwy duplikat — ta transakcja została już dodana ręcznie:"
-msgstr[1] "⚠️ Znaleziono {n} możliwe duplikaty — te transakcje zostały już dodane ręcznie:"
-msgstr[2] "⚠️ Znaleziono {n} możliwych duplikatów — te transakcje zostały już dodane ręcznie:"
+msgid ""
+"⚠️ Found {n} possible duplicate — this transaction was already added "
+"manually:"
+msgid_plural ""
+"⚠️ Found {n} possible duplicates — these transactions were already added "
+"manually:"
+msgstr[0] ""
+"⚠️ Znaleziono {n} możliwy duplikat — ta transakcja została już dodana "
+"ręcznie:"
+msgstr[1] ""
+"⚠️ Znaleziono {n} możliwe duplikaty — te transakcje zostały już dodane "
+"ręcznie:"
+msgstr[2] ""
+"⚠️ Znaleziono {n} możliwych duplikatów — te transakcje zostały już dodane"
+" ręcznie:"
 
 msgid "⚠️ Index error."
 msgstr "⚠️ Błąd indeksu."
@@ -737,7 +766,9 @@ msgid "⚠️ The search session has expired. Run /search again."
 msgstr "⚠️ Sesja wyszukiwania wygasła. Uruchom /search ponownie."
 
 msgid "⚠️ The search used simplified rules — results may be inaccurate."
-msgstr "⚠️ Wyszukiwanie wykonano według uproszczonych reguł — wyniki mogą być niedokładne."
+msgstr ""
+"⚠️ Wyszukiwanie wykonano według uproszczonych reguł — wyniki mogą być "
+"niedokładne."
 
 msgid "⚠️ The session has expired. Open the list again."
 msgstr "⚠️ Sesja wygasła. Otwórz listę ponownie."
@@ -824,7 +855,9 @@ msgstr "✅ Transakcja zapisana!"
 
 #, python-brace-format
 msgid "✅ Updated: statistics will now count *{new} PLN* instead of {old} PLN"
-msgstr "✅ Zaktualizowano: statystyki będą teraz uwzględniać *{new} PLN* zamiast {old} PLN"
+msgstr ""
+"✅ Zaktualizowano: statystyki będą teraz uwzględniać *{new} PLN* zamiast "
+"{old} PLN"
 
 msgid "✅ Yes"
 msgstr "✅ Tak"
@@ -836,7 +869,7 @@ msgid ""
 msgstr ""
 "✏️ *Ręczne dodawanie wydatku*\n"
 "\n"
-"Podaj kwotę i walutę (np. `25.50 PLN` lub `8 EUR`):"
+"Podaj kwotę i walutę (np. `25,50 PLN` lub `8 EUR`):"
 
 msgid "✏️ Change category"
 msgstr "✏️ Zmień kategorię"
@@ -874,20 +907,32 @@ msgstr "❌ Nie udało się odczytać PDF. Spróbuj innego pliku."
 msgid "❌ Couldn't read the data. Upload the statement again."
 msgstr "❌ Błąd odczytu danych. Prześlij wyciąg ponownie."
 
-msgid "❌ Couldn't read the receipt in the PDF. Try sending a photo of the receipt or add the expense manually with /add"
-msgstr "❌ Nie udało się rozpoznać paragonu w PDF. Spróbuj przesłać zdjęcie paragonu lub dodaj wydatek ręcznie poleceniem /add"
+msgid ""
+"❌ Couldn't read the receipt in the PDF. Try sending a photo of the "
+"receipt or add the expense manually with /add"
+msgstr ""
+"❌ Nie udało się rozpoznać paragonu w PDF. Spróbuj przesłać zdjęcie "
+"paragonu lub dodaj wydatek ręcznie poleceniem /add"
 
-msgid "❌ Couldn't read the receipt. Try taking a sharper photo or add the expense manually with /add"
-msgstr "❌ Nie udało się rozpoznać paragonu. Spróbuj zrobić wyraźniejsze zdjęcie lub dodaj wydatek ręcznie poleceniem /add"
+msgid ""
+"❌ Couldn't read the receipt. Try taking a sharper photo or add the "
+"expense manually with /add"
+msgstr ""
+"❌ Nie udało się rozpoznać paragonu. Spróbuj zrobić wyraźniejsze zdjęcie "
+"lub dodaj wydatek ręcznie poleceniem /add"
 
-msgid "❌ Couldn't recognize the file. Supported: Erste Bank Polska statements (PDF) and Revolut consolidated statements (CSV)."
-msgstr "❌ Nie udało się rozpoznać pliku. Obsługiwane są wyciągi Erste Bank Polska (PDF) oraz zbiorcze wyciągi Revolut (CSV)."
+msgid ""
+"❌ Couldn't recognize the file. Supported: Erste Bank Polska statements "
+"(PDF) and Revolut consolidated statements (CSV)."
+msgstr ""
+"❌ Nie udało się rozpoznać pliku. Obsługiwane są wyciągi Erste Bank Polska"
+" (PDF) oraz zbiorcze wyciągi Revolut (CSV)."
 
 msgid "❌ Enter a valid amount, e.g. `500` or `1500.50`"
-msgstr "❌ Podaj prawidłową kwotę, np. `500` lub `1500.50`"
+msgstr "❌ Podaj prawidłową kwotę, np. `500` lub `1500,50`"
 
 msgid "❌ I didn't get the format. Enter it like: `25.50 PLN`"
-msgstr "❌ Nie rozpoznałem formatu. Podaj w postaci: `25.50 PLN`"
+msgstr "❌ Nie rozpoznałem formatu. Podaj w postaci: `25,50 PLN`"
 
 msgid "❌ Invalid date format. Enter *DD.MM.YYYY* or `/skip`:"
 msgstr "❌ Nieprawidłowy format daty. Podaj *DD.MM.RRRR* lub `/skip`:"
@@ -947,11 +992,11 @@ msgstr "🌐 Wybierz język bota:"
 
 #, python-brace-format
 msgid "🎉 Your {year} in FinanceBot!"
-msgstr "🎉 Twój {year} rok w FinanceBot!"
+msgstr "🎉 Twój rok {year} w FinanceBot!"
 
 #, python-brace-format
 msgid "🏆 Top category: {name} — {amount} PLN ({pct})"
-msgstr "🏆 Najlepsza kategoria: {name} — {amount} PLN ({pct})"
+msgstr "🏆 Główna kategoria: {name} — {amount} PLN ({pct})"
 
 msgid "🏠 Main menu"
 msgstr "🏠 Menu główne"
@@ -970,10 +1015,10 @@ msgid "🏪 *Top 5 stores:*"
 msgstr "🏪 *Top 5 sklepów:*"
 
 msgid "🏪 *Top stores:*"
-msgstr "🏪 *Najlepsze sklepy:*"
+msgstr "🏪 *Top sklepy:*"
 
 msgid "🏪 By store"
-msgstr "🏪 Według sklepu"
+msgstr "🏪 Według sklepów"
 
 #, python-brace-format
 msgid "🏪 Spending by store for {period}"
@@ -1045,7 +1090,7 @@ msgid "💰 Total: {amount}"
 msgstr "💰 Razem: {amount}"
 
 msgid "💱 *By currency:*"
-msgstr "💱 *Według waluty:*"
+msgstr "💱 *Według walut:*"
 
 msgid "💳 *Revolut — consolidated statement recognized*"
 msgstr "💳 *Revolut — zbiorczy wyciąg rozpoznany*"
@@ -1124,7 +1169,9 @@ msgstr "📈 Wykres dzienny"
 
 #, python-brace-format
 msgid "📈 End-of-month forecast: ~{amount} PLN (at the current spending rate)"
-msgstr "📈 Prognoza na koniec miesiąca: ~{amount} PLN (przy obecnym tempie wydatków)"
+msgstr ""
+"📈 Prognoza na koniec miesiąca: ~{amount} PLN (przy obecnym tempie "
+"wydatków)"
 
 #, python-brace-format
 msgid "📈 Most expensive month: {month} — {amount} PLN"
@@ -1188,7 +1235,8 @@ msgid ""
 "💰 /budget — budgets by category\n"
 "✏️ /add — add an expense manually\n"
 "📤 /export — export to an Excel file\n"
-"🔍 /search — search expenses in plain text (e.g. “Kaufland expenses in June”)\n"
+"🔍 /search — search expenses in plain text (e.g. “Kaufland expenses in "
+"June”)\n"
 "🎁 /wrapped — your year in one picture\n"
 "👥 /split — split a receipt with other people\n"
 "🌐 /language — change language\n"
@@ -1207,7 +1255,8 @@ msgstr ""
 "💰 /budget — budżety według kategorii\n"
 "✏️ /add — dodaj wydatek ręcznie\n"
 "📤 /export — eksport do pliku Excel\n"
-"🔍 /search — szukaj wydatków zwykłym tekstem (np. „wydatki w Kaufland w czerwcu”)\n"
+"🔍 /search — szukaj wydatków zwykłym tekstem (np. „wydatki w Kaufland w "
+"czerwcu”)\n"
 "🎁 /wrapped — Twój rok w jednym obrazku\n"
 "👥 /split — podziel paragon z innymi osobami\n"
 "🌐 /language — zmień język\n"
@@ -1290,7 +1339,7 @@ msgid ""
 "🚨 *{category} budget exceeded!*\n"
 "{spent} / {limit} PLN — over by {overage} PLN"
 msgstr ""
-"🚨 *Budżet {category} przekroczony!*\n"
+"🚨 *Budżet „{category}” przekroczony!*\n"
 "{spent} / {limit} PLN — przekroczenie o {overage} PLN"
 
 #, python-brace-format
@@ -1306,8 +1355,5 @@ msgstr "🧾 Pozycje paragonu"
 
 #, python-brace-format
 msgid "🧾 Transactions: *{count}*"
-msgstr "🧾 Transakcji: *{count}*"
-
-#~ msgid "✅ Confirm"
-#~ msgstr ""
+msgstr "🧾 Liczba transakcji: *{count}*"
 

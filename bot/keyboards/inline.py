@@ -131,9 +131,9 @@ def fuzzy_matches_keyboard(matches: list[str], period: str) -> InlineKeyboardMar
 def stats_period_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text=_("Last week"), callback_data="stats:7"),
-        InlineKeyboardButton(text=_("Last month"), callback_data="stats:30"),
-        InlineKeyboardButton(text=_("Last year"), callback_data="stats:365"),
+        InlineKeyboardButton(text=_("7 days"), callback_data="stats:7"),
+        InlineKeyboardButton(text=_("30 days"), callback_data="stats:30"),
+        InlineKeyboardButton(text=_("365 days"), callback_data="stats:365"),
     )
     return builder.as_markup()
 
