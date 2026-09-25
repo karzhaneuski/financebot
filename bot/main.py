@@ -69,10 +69,12 @@ def role_components(role: str) -> frozenset[str]:
     raise ValueError(f"Unknown APP_ROLE {role!r}; expected one of {', '.join(ROLES)}")
 
 
-def build_dispatcher(redis: aioredis.Redis) -> Dispatcher:
+def build_dispatcher(redis: aioredis.Redis, *, session_middleware=None) -> Dispatcher:
+    """Dispatcher with all middlewares and routers. Tests pass their own
+    session middleware (in-memory DB); production uses DbSessionMiddleware."""
     dp = Dispatcher()
 
-    dp.update.middleware(DbSessionMiddleware())
+    dp.update.middleware(session_middleware or DbSessionMiddleware())
     dp.update.middleware(RedisMiddleware(redis))
 
     dp.include_router(common.router)

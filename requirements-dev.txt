@@ -1,0 +1,6 @@
+-r requirements.txt
+pytest==9.0.3
+pytest-asyncio==1.4.0
+aiosqlite==0.22.1
+freezegun==1.5.5
+fakeredis==2.38.0

@@ -2,6 +2,18 @@
 
 Never touches a real database (local or remote).
 """
+import os
+
+# Tests never read the real .env: required settings get dummy values before
+# bot.config is imported (env vars take precedence over .env).
+for _key, _value in {
+    "BOT_TOKEN": "123456:TEST",
+    "DATABASE_URL": "sqlite+aiosqlite:///:memory:",
+    "REDIS_URL": "redis://localhost:6379/0",
+    "EXCHANGE_API_KEY": "test",
+}.items():
+    os.environ.setdefault(_key, _value)
+
 import datetime
 import enum
 

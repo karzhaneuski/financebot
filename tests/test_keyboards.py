@@ -66,16 +66,10 @@ def test_every_button_is_a_callback_button():
     assert offenders == []
 
 
-_DISPATCHER = None
-
-
 def _dispatcher():
-    """Routers attach once per process, so build the dispatcher once."""
-    global _DISPATCHER
-    if _DISPATCHER is None:
-        from bot.main import build_dispatcher
-        _DISPATCHER = build_dispatcher(fakeredis.aioredis.FakeRedis())
-    return _DISPATCHER
+    """Routers attach once per process — share the snapshot harness's dispatcher."""
+    from tests import i18n_harness
+    return i18n_harness.get_dispatcher(fakeredis.aioredis.FakeRedis)[0]
 
 
 def _callback(data: str) -> CallbackQuery:
