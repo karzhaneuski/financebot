@@ -132,8 +132,7 @@ async def cmd_search(message: Message, session: AsyncSession, redis) -> None:
     query = parts[1].strip() if len(parts) > 1 else ""
     if not query:
         await message.answer(
-            _("What should I look for? For example: 'Kaufland expenses in June' "
-              "or 'purchases over 200 złoty in May'")
+            _("What should I look for? Type a store name, for example: 'Kaufland' or 'Lidl'")
         )
         return
 
