@@ -275,12 +275,3 @@ def export_done_keyboard() -> InlineKeyboardMarkup:
         InlineKeyboardButton(text="🏠 Главное меню", callback_data="export_done:menu"),
     )
     return builder.as_markup()
-
-
-def confirm_keyboard(prefix: str = "confirm") -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
-    builder.row(
-        InlineKeyboardButton(text="✅ Подтвердить", callback_data=f"{prefix}:yes"),
-        InlineKeyboardButton(text="❌ Отменить", callback_data=f"{prefix}:no"),
-    )
-    return builder.as_markup()

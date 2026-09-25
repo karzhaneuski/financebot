@@ -1,12 +1,15 @@
-from aiogram import Router
+from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 import redis.asyncio as aioredis
 
 from bot.db.crud import delete_user_data
+from bot.handlers.budget import _show_budget_list
+from bot.handlers.manual import cmd_add
+from bot.handlers.stats import cmd_stats
 
 router = Router()
 
@@ -38,14 +41,17 @@ HELP_TEXT = (
 )
 
 
+# Callback buttons that open the section right away. (They used to be
+# switch_inline_query_current_chat buttons, which only pasted
+# "@bot /stats" into the input field — a text no handler matches.)
 def _start_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text="📊 Статистика", switch_inline_query_current_chat="/stats"),
-        InlineKeyboardButton(text="💰 Бюджет", switch_inline_query_current_chat="/budget"),
+        InlineKeyboardButton(text="📊 Статистика", callback_data="start:stats"),
+        InlineKeyboardButton(text="💰 Бюджет", callback_data="start:budget"),
     )
     builder.row(
-        InlineKeyboardButton(text="➕ Добавить вручную", switch_inline_query_current_chat="/add"),
+        InlineKeyboardButton(text="➕ Добавить вручную", callback_data="start:add"),
     )
     return builder.as_markup()
 
@@ -53,6 +59,22 @@ def _start_keyboard() -> InlineKeyboardMarkup:
 @router.message(Command("start"))
 async def cmd_start(message: Message) -> None:
     await message.answer(WELCOME_TEXT, parse_mode="Markdown", reply_markup=_start_keyboard())
+
+
+@router.callback_query(F.data.startswith("start:"))
+async def start_menu_callback(call: CallbackQuery, state: FSMContext, session: AsyncSession) -> None:
+    """Same as sending /stats, /budget or /add. Replies with a new message so
+    the welcome text stays; the user id comes from the callback (the message
+    itself was sent by the bot)."""
+    action = call.data.split(":", 1)[1]
+    await call.answer()
+    if action == "stats":
+        await cmd_stats(call.message)
+    elif action == "budget":
+        await _show_budget_list(call.message, session, call.from_user.id)
+    elif action == "add":
+        await state.clear()
+        await cmd_add(call.message, state)
 
 
 @router.message(Command("help"))
