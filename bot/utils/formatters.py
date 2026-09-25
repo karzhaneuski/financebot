@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Optional
 
 from babel.dates import format_date as _babel_format_date
@@ -62,11 +63,21 @@ def format_date_str(date_str: str | None) -> str:
     return format_day_month_year(d)
 
 
+# CLDR minimumGroupingDigits, which Babel ignores: Polish leaves 4-digit
+# numbers ungrouped ('1234,50' but '12 345,50'), as Intl does in the Mini App.
+_MIN_GROUPING_DIGITS = {"pl": 2}
+
+
 def format_number(amount: float, decimals: int = 2) -> str:
-    """Locale-aware grouping and decimal separator (e.g. '1 234,50' in ru/pl,
-    '1,234.50' in en) for a plain number, no currency symbol."""
-    pattern = "#,##0" + ("." + "0" * decimals if decimals else "")
-    return _babel_format_decimal(amount, format=pattern, locale=current_language())
+    """Locale-aware grouping and decimal separator (e.g. '1 234,50' in ru,
+    '1234,50' in pl, '1,234.50' in en) for a plain number, no currency symbol."""
+    lang = current_language()
+    # Round half away from zero like Intl (Babel alone rounds half-even:
+    # 1234.5 -> '1234'); str() so 0.005 is taken as written, not as its float.
+    value = Decimal(str(amount)).quantize(Decimal(1).scaleb(-decimals), rounding=ROUND_HALF_UP)
+    grouped = abs(value) >= 10 ** (2 + _MIN_GROUPING_DIGITS.get(lang, 1))
+    pattern = ("#,##0" if grouped else "0") + ("." + "0" * decimals if decimals else "")
+    return _babel_format_decimal(value, format=pattern, locale=lang)
 
 
 def format_currency(amount: float, currency: str) -> str:
