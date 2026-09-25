@@ -30,6 +30,10 @@ Tier = Literal["vision", "fast"]
 # rather than "this particular request is bad".
 _UNAVAILABLE_STATUSES = {401, 402, 403, 429, 500, 502, 503, 504, 529}
 _BALANCE_MARKERS = ("credit balance", "billing", "quota", "insufficient", "rate limit")
+# google.rpc.ErrorInfo reasons that mean a configuration/account problem, not
+# a bad request. Google answers an invalid key with HTTP 400 INVALID_ARGUMENT,
+# so the status code alone would classify it as an ordinary request error.
+_GEMINI_UNAVAILABLE_REASONS = {"API_KEY_INVALID", "API_KEY_EXPIRED", "API_KEY_SERVICE_BLOCKED"}
 
 
 class LLMError(Exception):
@@ -187,6 +191,11 @@ class GeminiProvider:
                 model=self._model, contents=contents, config=config,
             )
         except self._errors.APIError as e:
+            reasons = _gemini_error_reasons(e.details)
+            if reasons & _GEMINI_UNAVAILABLE_REASONS:
+                raise LLMUnavailableError(
+                    f"{self.name}: HTTP {e.code}: {', '.join(sorted(reasons))} (check GEMINI_API_KEY)"
+                ) from e
             raise _classify(self.name, e.code, f"{e.status} {e.message}") from e
         except Exception as e:  # network errors surface as httpx exceptions
             import httpx
@@ -201,6 +210,18 @@ class GeminiProvider:
             # Empty candidate: blocked by safety filters or cut off.
             raise InvalidLLMResponse(f"{self.name} returned an empty response")
         return _loads(raw, self.name)
+
+
+def _gemini_error_reasons(details) -> set[str]:
+    """ErrorInfo.reason values from a Gemini error body ({"error": {"details": [...]}})."""
+    if not isinstance(details, dict):
+        return set()
+    error = details.get("error", details)
+    items = error.get("details") if isinstance(error, dict) else None
+    return {
+        d["reason"] for d in (items or [])
+        if isinstance(d, dict) and isinstance(d.get("reason"), str)
+    }
 
 
 def _classify(provider: str, status: int | None, message: str) -> LLMError:

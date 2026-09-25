@@ -295,3 +295,48 @@ async def test_pdf_receipt_shows_temporarily_unavailable_message(monkeypatch):
     status = _Status()
     await rh._handle_pdf_receipt(_Message(), status, b"%PDF", session=None, redis=None, bot=_Bot())
     assert status.texts[-1] == rh.VISION_UNAVAILABLE_TEXT
+
+
+def _gemini_error_with_reason(code: int, status: str, message: str, reason: str):
+    """Shape of a real Gemini error body, incl. google.rpc.ErrorInfo."""
+    from google.genai import errors
+    body = {"error": {
+        "code": code, "message": message, "status": status,
+        "details": [
+            {"@type": "type.googleapis.com/google.rpc.ErrorInfo", "reason": reason,
+             "domain": "googleapis.com", "metadata": {"service": "generativelanguage.googleapis.com"}},
+            {"@type": "type.googleapis.com/google.rpc.LocalizedMessage", "locale": "en-US", "message": message},
+        ],
+    }}
+    return errors.ClientError(code, body)
+
+
+@pytest.mark.parametrize("reason", ["API_KEY_INVALID", "API_KEY_EXPIRED"])
+async def test_gemini_invalid_key_is_unavailable_not_a_bad_request(gemini, reason):
+    """Google answers a bad key with 400 INVALID_ARGUMENT; users must get the
+    "temporarily unavailable" message, not a generic error."""
+    gemini.side_effect = _gemini_error_with_reason(
+        400, "INVALID_ARGUMENT", "API key not valid. Please pass a valid API key.", reason)
+    with pytest.raises(LLMUnavailableError) as exc:
+        await parse_receipt(b"jpeg-bytes")
+    assert "GEMINI_API_KEY" in str(exc.value)
+    with pytest.raises(LLMUnavailableError):
+        await parse_bank_transaction_screenshot(b"jpeg-bytes")
+
+
+async def test_gemini_other_400_reason_stays_a_request_error(gemini):
+    gemini.side_effect = _gemini_error_with_reason(
+        400, "INVALID_ARGUMENT", "Unable to process input image.", "INVALID_IMAGE")
+    with pytest.raises(LLMError) as exc:
+        await parse_receipt(b"jpeg-bytes")
+    assert not isinstance(exc.value, LLMUnavailableError)
+
+
+async def test_invalid_key_photo_shows_unavailable_message(gemini):
+    """End to end through the real vision functions: invalid key → friendly text."""
+    import bot.handlers.receipt as rh
+    gemini.side_effect = _gemini_error_with_reason(
+        400, "INVALID_ARGUMENT", "API key not valid. Please pass a valid API key.", "API_KEY_INVALID")
+    message = _Message()
+    await rh.handle_receipt_photo(message, _Bot(), session=None, redis=None)
+    assert message.status.texts[-1] == rh.VISION_UNAVAILABLE_TEXT
