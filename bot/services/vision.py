@@ -1,14 +1,9 @@
-import base64
-import json
 import logging
-import re
 import sys
 import traceback
 from datetime import date
 
-import anthropic
-
-from bot.config import settings
+from bot.services.llm import InvalidLLMResponse, LLMError, LLMUnavailableError, _extract_json, get_provider
 from bot.utils.validators import validate_receipt
 
 logger = logging.getLogger(__name__)
@@ -64,6 +59,64 @@ USER_PROMPT = """Parse this receipt and return JSON in this exact format (no mar
 }
 
 For deposit lines set deposit_type to "wydanie" (paid) or "przyjecie" (returned). For all other items set deposit_type to null."""
+
+
+# Structured-output schemas mirroring the JSON the prompts ask for, so the
+# rest of the pipeline sees the same shape from every provider. Enforced
+# natively by Gemini; Claude follows the format described in the prompt.
+_NULLABLE_STR = {"type": ["string", "null"]}
+_NULLABLE_NUM = {"type": ["number", "null"]}
+
+RECEIPT_CATEGORIES = ["groceries", "cafe", "pharmacy", "transport", "electronics", "clothing", "household", "other"]
+
+RECEIPT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "store": _NULLABLE_STR,
+        "date": {"type": ["string", "null"], "description": "YYYY-MM-DD"},
+        "currency": {"type": "string", "description": "ISO 4217 code, e.g. PLN"},
+        "total": _NULLABLE_NUM,
+        "items": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "quantity": _NULLABLE_NUM,
+                    "unit_price": _NULLABLE_NUM,
+                    "total_price": _NULLABLE_NUM,
+                    "category": {"type": "string", "enum": RECEIPT_CATEGORIES},
+                    "deposit_type": {"type": ["string", "null"], "enum": ["wydanie", "przyjecie", None]},
+                },
+                "required": ["name", "quantity", "unit_price", "total_price", "category", "deposit_type"],
+            },
+        },
+    },
+    "required": ["store", "date", "currency", "total", "items"],
+}
+
+# The Claude prompt answers the literal `null` for "not a transaction screen";
+# a schema-enforced answer can't have a null root, so it carries a flag instead
+# (see _BANK_TX_SCHEMA_HINT) that parse_bank_transaction_screenshot() maps back.
+BANK_TX_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "is_transaction_screen": {"type": "boolean"},
+        "merchant": _NULLABLE_STR,
+        "amount": _NULLABLE_NUM,
+        "currency": _NULLABLE_STR,
+        "date": {"type": ["string", "null"], "description": "YYYY-MM-DD"},
+        "year_visible": {"type": ["boolean", "null"]},
+        "raw_title": _NULLABLE_STR,
+    },
+    "required": ["is_transaction_screen", "merchant", "amount", "currency", "date", "year_visible", "raw_title"],
+}
+
+_BANK_TX_SCHEMA_HINT = (
+    "Output format note: instead of the literal null, answer "
+    '{"is_transaction_screen": false} with every other field null when the image is not a '
+    "bank/payment transaction screen; otherwise set is_transaction_screen to true."
+)
 
 
 _DEPOSIT_KEYWORDS = ("kaucja", "opakowania zwrotne", "zwrot kaucji")
@@ -176,15 +229,6 @@ def _infer_recent_year(date_str: str | None, today: date) -> str | None:
     return f"{year:04d}-{month:02d}-{day:02d}"
 
 
-def _extract_json(raw: str) -> str:
-    """Strip markdown code fences if Claude wrapped the JSON despite instructions."""
-    # Remove ```json ... ``` or ``` ... ``` wrappers
-    match = re.search(r"```(?:json)?\s*([\s\S]+?)\s*```", raw)
-    if match:
-        return match.group(1).strip()
-    return raw.strip()
-
-
 _BANK_TX_SYSTEM_TEMPLATE = """You are a bank/payment-app transaction screenshot parser (Erste Bank, Revolut, mobile wallets, etc.).
 
 Examine the image. If it shows a transaction detail screen — look for any of:
@@ -226,53 +270,29 @@ async def parse_bank_transaction_screenshot(image_bytes: bytes, today: date | No
     themselves (see bot.services.currency.convert_to_pln).
     """
     today = today or date.today()
-    client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
-    image_b64 = base64.standard_b64encode(image_bytes).decode("utf-8")
     system_prompt = _BANK_TX_SYSTEM_TEMPLATE.replace("__TODAY__", today.isoformat())
 
     try:
-        response = await client.messages.create(
-            model="claude-sonnet-5",
-            max_tokens=512,
+        data = await get_provider().generate_json(
             system=system_prompt,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "media_type": "image/jpeg",
-                                "data": image_b64,
-                            },
-                        },
-                        {"type": "text", "text": "Parse this image."},
-                    ],
-                }
-            ],
+            prompt="Parse this image.",
+            schema=BANK_TX_SCHEMA,
+            schema_hint=_BANK_TX_SCHEMA_HINT,
+            tier="vision",
+            image=image_bytes,
+            max_tokens=512,
         )
-    except anthropic.APIError as e:
-        print(f"Claude Vision API error (bank screenshot): {e}", file=sys.stderr)
+    except InvalidLLMResponse:
+        return None
+    except LLMError as e:
+        print(f"Vision API error (bank screenshot): {e}", file=sys.stderr)
         traceback.print_exc(file=sys.stderr)
         raise
-
-    raw_text = response.content[0].text.strip()
-    logger.debug("Bank screenshot Claude response: %r", raw_text)
-
-    json_text = _extract_json(raw_text)
-
-    try:
-        data = json.loads(json_text)
-    except json.JSONDecodeError:
-        logger.warning("Bank screenshot parser returned invalid JSON (%d chars)", len(raw_text))
-        logger.debug("Bank screenshot invalid JSON: %r", raw_text)
-        return None
 
     if data is None:
         return None
 
-    if not isinstance(data, dict):
+    if not isinstance(data, dict) or data.get("is_transaction_screen") is False:
         return None
 
     if not data.get("merchant") or data.get("amount") is None or not data.get("date"):
@@ -294,49 +314,27 @@ async def parse_bank_transaction_screenshot(image_bytes: bytes, today: date | No
 
 
 async def parse_receipt(image_bytes: bytes) -> dict:
-    client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
-    image_b64 = base64.standard_b64encode(image_bytes).decode("utf-8")
+    """Parse a receipt photo into the validated receipt dict.
 
+    Raises LLMUnavailableError when the provider is out of quota/balance or
+    down, ValueError when the image couldn't be read, LLMError otherwise.
+    """
     try:
-        response = await client.messages.create(
-            model="claude-sonnet-5",
-            max_tokens=2048,
+        data = await get_provider().generate_json(
             system=SYSTEM_PROMPT,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "media_type": "image/jpeg",
-                                "data": image_b64,
-                            },
-                        },
-                        {"type": "text", "text": USER_PROMPT},
-                    ],
-                }
-            ],
+            prompt=USER_PROMPT,
+            schema=RECEIPT_SCHEMA,
+            tier="vision",
+            image=image_bytes,
+            max_tokens=2048,
         )
-    except anthropic.APIError as e:
-        print(f"Claude Vision API error: {e}", file=sys.stderr)
+    except LLMError as e:
+        print(f"Vision API error: {e}", file=sys.stderr)
         traceback.print_exc(file=sys.stderr)
-        raise RuntimeError(f"Ошибка API Claude: {e}") from e
+        raise
 
-    raw_text = response.content[0].text.strip()
-    logger.debug("Claude raw response: %r", raw_text)
-
-    json_text = _extract_json(raw_text)
-
-    try:
-        data = json.loads(json_text)
-    except json.JSONDecodeError as e:
-        # The raw output is the receipt's content (items, amounts) — DEBUG only.
-        logger.error("Claude returned invalid JSON (%d chars)", len(raw_text))
-        logger.debug("Claude invalid JSON output: %r", raw_text)
-        traceback.print_exc(file=sys.stderr)
-        raise ValueError("Claude returned invalid JSON") from e
+    if not isinstance(data, dict):
+        raise ValueError("Receipt parser returned no JSON object")
 
     if isinstance(data.get("items"), list):
         data["items"] = _postprocess_items(data["items"])

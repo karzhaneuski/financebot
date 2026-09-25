@@ -1,5 +1,8 @@
 aiogram==3.13.1
 anthropic==0.40.0
+# 2.8.0 is the newest google-genai that allows pydantic<2.10 (aiogram 3.13 pin);
+# 2.9.0+ require pydantic>=2.12.5.
+google-genai==2.8.0
 sqlalchemy[asyncio]==2.0.36
 asyncpg==0.30.0
 alembic==1.14.0

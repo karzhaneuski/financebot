@@ -1,19 +1,16 @@
 """Natural-language search query parsing (Feature 1).
 
-Calls the Anthropic API (Haiku-tier) to extract structured filters from a
-free-text Russian query. Falls back to a lightweight regex parser when the
+Calls the configured LLM provider (bot.services.llm, fast tier) to extract
+structured filters from a free-text Russian query. Falls back to a lightweight regex parser when the
 API is unavailable so /search degrades gracefully.
 """
-import json
 import logging
 import re
 from calendar import monthrange
 from datetime import date, timedelta
 
-import anthropic
-
-from bot.config import settings
 from bot.db.models import Category
+from bot.services.llm import get_provider
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +34,21 @@ Rules:
 - category must be one of the listed enum values; pick the closest match ("продукты"→groceries, "кафе/ресторан"→cafe, "аптека"→pharmacy, etc.). If unsure, use null.
 - Amounts are in PLN unless another currency is clearly stated (convert nothing — just use the number).
 - Omitted filters stay null."""
+
+# Same shape as the JSON described in SYSTEM_PROMPT (enforced by Gemini).
+SEARCH_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "merchant": {"type": ["string", "null"]},
+        "category": {"type": ["string", "null"], "enum": [c.value for c in Category] + [None]},
+        "date_from": {"type": ["string", "null"], "description": "YYYY-MM-DD"},
+        "date_to": {"type": ["string", "null"], "description": "YYYY-MM-DD"},
+        "amount_min": {"type": ["number", "null"]},
+        "amount_max": {"type": ["number", "null"]},
+        "include_cash": {"type": "boolean"},
+    },
+    "required": ["merchant", "category", "date_from", "date_to", "amount_min", "amount_max", "include_cash"],
+}
 
 _MONTHS_RU = {
     "январ": 1, "феврал": 2, "март": 3, "апрел": 4, "ма[ейя]": 5, "июн": 6,
@@ -141,17 +153,16 @@ async def parse_search_query(text: str, today: date | None = None) -> tuple[dict
     surface a "results may be imprecise" notice in that case.
     """
     today = today or date.today()
-    client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
     try:
-        response = await client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=512,
+        data = await get_provider().generate_json(
             system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": text.strip()}],
+            prompt=text.strip(),
+            schema=SEARCH_SCHEMA,
+            tier="fast",
+            max_tokens=512,
         )
-        raw = response.content[0].text.strip()
-        match = re.search(r"```(?:json)?\s*([\s\S]+?)\s*```", raw)
-        data = json.loads(match.group(1) if match else raw)
+        if not isinstance(data, dict):
+            raise ValueError("search parser returned no JSON object")
         parsed = _validate(data)
         # Sanity-check LLM dates; fall back to regex parser on garbage.
         if parsed.get("date_from") and parsed.get("date_to") and parsed["date_from"] > parsed["date_to"]:

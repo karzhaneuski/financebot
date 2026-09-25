@@ -10,15 +10,13 @@ from tests.conftest import make_receipt
 
 @pytest.fixture
 def no_llm(monkeypatch):
-    """Force the regex fallback by making the Anthropic client unusable."""
+    """Force the regex fallback: the LLM provider is unavailable."""
     import bot.services.search_parser as sp
-    class _Boom:
-        def __init__(self, *a, **k):
-            pass
-        @property
-        def messages(self):
-            raise RuntimeError("no network")
-    monkeypatch.setattr(sp.anthropic, "AsyncAnthropic", _Boom)
+    from bot.services.llm import LLMUnavailableError
+
+    def _unavailable():
+        raise LLMUnavailableError("test: provider unavailable")
+    monkeypatch.setattr(sp, "get_provider", _unavailable)
 
 
 async def test_parse_amount_range(no_llm):

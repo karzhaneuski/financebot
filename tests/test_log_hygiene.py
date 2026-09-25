@@ -76,15 +76,11 @@ def test_total_mismatch_does_not_log_amounts(caplog):
 
 async def test_search_query_not_logged_above_debug(monkeypatch, caplog):
     import bot.services.search_parser as sp
+    from bot.services.llm import LLMUnavailableError
 
-    class _Boom:
-        def __init__(self, *a, **k):
-            pass
-
-        @property
-        def messages(self):
-            raise RuntimeError("no network")
-    monkeypatch.setattr(sp.anthropic, "AsyncAnthropic", _Boom)
+    def _unavailable():
+        raise LLMUnavailableError("test: provider unavailable")
+    monkeypatch.setattr(sp, "get_provider", _unavailable)
     caplog.set_level(logging.DEBUG)
     await sp.parse_search_query("покупки дороже 4321 в Kaufland")
     assert "4321" not in _info_and_above(caplog)

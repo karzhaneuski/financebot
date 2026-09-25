@@ -5,6 +5,7 @@ Never touches a real database (local or remote).
 import datetime
 import enum
 
+import pytest
 import pytest_asyncio
 from sqlalchemy import BigInteger, Date, DateTime, Float, ForeignKey, Integer, Numeric, String, func
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
@@ -13,6 +14,22 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 # NOTE: we deliberately do NOT import bot.db.models here for the test schema?
 # No — we DO want the real models so aggregates under test match production.
 from bot.db.models import Base, Category, Item, Receipt
+
+
+@pytest.fixture(autouse=True)
+def offline_llm(monkeypatch):
+    """No test may reach a real LLM API: default to Gemini without a key
+    (get_provider() raises LLMUnavailableError) and drop the cached provider
+    around every test. Tests that exercise a provider configure it explicitly."""
+    from bot.config import settings
+    from bot.services import llm
+
+    monkeypatch.setattr(settings, "LLM_PROVIDER", "gemini")
+    monkeypatch.setattr(settings, "GEMINI_API_KEY", None)
+    monkeypatch.setattr(settings, "ANTHROPIC_API_KEY", None)
+    llm.reset_provider()
+    yield
+    llm.reset_provider()
 
 
 @pytest_asyncio.fixture

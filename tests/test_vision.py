@@ -118,6 +118,17 @@ def test_biedronka_multiple_items_with_one_discount():
     assert result[2]["total_price"] == pytest.approx(7.49)
 
 
+@pytest.fixture(autouse=True)
+def anthropic_provider(monkeypatch):
+    """These tests exercise the Anthropic provider path with a mocked SDK."""
+    from bot.config import settings
+    from bot.services import llm
+
+    monkeypatch.setattr(settings, "LLM_PROVIDER", "anthropic")
+    monkeypatch.setattr(settings, "ANTHROPIC_API_KEY", "test-key")
+    llm.reset_provider()
+
+
 def _mock_bank_tx_response(payload: str) -> MagicMock:
     mock_content = MagicMock()
     mock_content.text = payload
@@ -134,7 +145,7 @@ async def test_parse_bank_transaction_screenshot_returns_dict():
     )
     mock_response = _mock_bank_tx_response(payload)
 
-    with patch("bot.services.vision.anthropic.AsyncAnthropic") as MockClient:
+    with patch("anthropic.AsyncAnthropic") as MockClient:
         MockClient.return_value.messages.create = AsyncMock(return_value=mock_response)
         result = await parse_bank_transaction_screenshot(b"fake image")
 
@@ -154,7 +165,7 @@ async def test_parse_bank_transaction_screenshot_eur_amount():
     )
     mock_response = _mock_bank_tx_response(payload)
 
-    with patch("bot.services.vision.anthropic.AsyncAnthropic") as MockClient:
+    with patch("anthropic.AsyncAnthropic") as MockClient:
         MockClient.return_value.messages.create = AsyncMock(return_value=mock_response)
         result = await parse_bank_transaction_screenshot(b"fake image")
 
@@ -172,7 +183,7 @@ async def test_parse_bank_transaction_screenshot_byn_amount():
     )
     mock_response = _mock_bank_tx_response(payload)
 
-    with patch("bot.services.vision.anthropic.AsyncAnthropic") as MockClient:
+    with patch("anthropic.AsyncAnthropic") as MockClient:
         MockClient.return_value.messages.create = AsyncMock(return_value=mock_response)
         result = await parse_bank_transaction_screenshot(b"fake image")
 
@@ -191,7 +202,7 @@ async def test_parse_bank_transaction_screenshot_yearless_date_defaults_correctl
     )
     mock_response = _mock_bank_tx_response(payload)
 
-    with patch("bot.services.vision.anthropic.AsyncAnthropic") as MockClient:
+    with patch("anthropic.AsyncAnthropic") as MockClient:
         MockClient.return_value.messages.create = AsyncMock(return_value=mock_response)
         result = await parse_bank_transaction_screenshot(b"fake image", today=date(2026, 9, 2))
 
@@ -210,7 +221,7 @@ async def test_parse_bank_transaction_screenshot_yearless_future_date_rolls_back
     )
     mock_response = _mock_bank_tx_response(payload)
 
-    with patch("bot.services.vision.anthropic.AsyncAnthropic") as MockClient:
+    with patch("anthropic.AsyncAnthropic") as MockClient:
         MockClient.return_value.messages.create = AsyncMock(return_value=mock_response)
         result = await parse_bank_transaction_screenshot(b"fake image", today=date(2026, 9, 2))
 
@@ -225,7 +236,7 @@ async def test_parse_bank_transaction_screenshot_returns_none_for_receipt():
     mock_response = MagicMock()
     mock_response.content = [mock_content]
 
-    with patch("bot.services.vision.anthropic.AsyncAnthropic") as MockClient:
+    with patch("anthropic.AsyncAnthropic") as MockClient:
         MockClient.return_value.messages.create = AsyncMock(return_value=mock_response)
         result = await parse_bank_transaction_screenshot(b"fake image")
 
@@ -239,7 +250,7 @@ async def test_parse_bank_transaction_screenshot_returns_none_for_bad_json():
     mock_response = MagicMock()
     mock_response.content = [mock_content]
 
-    with patch("bot.services.vision.anthropic.AsyncAnthropic") as MockClient:
+    with patch("anthropic.AsyncAnthropic") as MockClient:
         MockClient.return_value.messages.create = AsyncMock(return_value=mock_response)
         result = await parse_bank_transaction_screenshot(b"fake image")
 
@@ -254,7 +265,7 @@ async def test_parse_receipt_invalid_json():
     mock_response = MagicMock()
     mock_response.content = [mock_content]
 
-    with patch("bot.services.vision.anthropic.AsyncAnthropic") as MockClient:
+    with patch("anthropic.AsyncAnthropic") as MockClient:
         mock_instance = MockClient.return_value
         mock_instance.messages.create = AsyncMock(return_value=mock_response)
 

@@ -2,14 +2,16 @@
 
 ## Project overview
 Telegram bot for personal finance tracking via receipt photos.
-User sends a photo of a receipt → Claude Vision parses it → data is stored in PostgreSQL → user can query statistics.
+User sends a photo of a receipt → the vision LLM (Gemini by default, or Claude) parses it → data is stored in PostgreSQL → user can query statistics.
 
 ## Tech stack
 - **Language**: Python 3.12
 - **Telegram framework**: aiogram 3.x (async)
 - **Database**: PostgreSQL 18 + SQLAlchemy 2 (async) + Alembic
 - **Cache / FSM state**: Redis 7
-- **AI parsing**: Anthropic Claude Vision API (`claude-sonnet-5`)
+- **AI parsing**: provider abstraction `bot/services/llm.py` — Google Gemini
+  (default, `google-genai`, structured output, `GEMINI_MODEL`) or Anthropic
+  Claude (`claude-sonnet-5` vision, Haiku for search); `LLM_PROVIDER=gemini|anthropic`
 - **Currency rates**: exchangerate-api.com (free tier, cached in Redis 1h)
 - **Charts**: matplotlib
 - **Excel export**: openpyxl
@@ -44,7 +46,8 @@ financebot/
 │   │   └── common.py        # /start, /help, /cancel
 │   ├── services/
 │   │   ├── __init__.py
-│   │   ├── vision.py        # Claude Vision API call
+│   │   ├── vision.py        # receipt / bank-screenshot recognition (prompts + JSON schemas)
+│   │   ├── llm.py           # LLM provider abstraction (gemini | anthropic)
 │   │   ├── currency.py      # currency conversion, Redis cache
 │   │   ├── stats.py         # aggregation queries
 │   │   ├── budget.py        # budget check logic
@@ -80,7 +83,7 @@ schema (see "Personal totals & splitting" below).
 ### Categories (fixed enum)
 `groceries | cafe | pharmacy | transport | electronics | clothing | household | housing | entertainment | health | subscriptions | other`
 
-## Claude Vision — system prompt
+## Vision — system prompt (shared by all providers)
 ```
 You are a receipt parser. Extract all data from the receipt image and return ONLY valid JSON, no markdown, no explanation.
 Rules:
@@ -118,7 +121,12 @@ Rules:
 - Redis TTL for currency rates: 3600 seconds
 - Never hardcode API keys — always read from `config.py` (pydantic-settings)
 - All error responses to user must be friendly Russian text
-- Log all Claude Vision API errors to stderr with full traceback
+- Log all vision provider errors to stderr with full traceback
+- LLM calls go through `bot.services.llm.get_provider().generate_json()`
+  with a JSON schema matching the prompt's format; never call an SDK
+  directly. Quota/balance/rate-limit/outage errors raise
+  `LLMUnavailableError` → users see `VISION_UNAVAILABLE_TEXT`
+  (bot/handlers/receipt.py), not a generic error
 
 ## Bot commands
 ```
@@ -188,7 +196,10 @@ Rules:
 See `.env.example` (no values):
 ```
 BOT_TOKEN=
-ANTHROPIC_API_KEY=
+LLM_PROVIDER=gemini             # or anthropic
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-3.8-flash
+ANTHROPIC_API_KEY=             # only for LLM_PROVIDER=anthropic (+ normalization)
 EXCHANGE_API_KEY=
 POSTGRES_USER=
 POSTGRES_PASSWORD=

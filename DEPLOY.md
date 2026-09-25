@@ -65,7 +65,43 @@ Before filling `.env`:
   `postgresql+asyncpg://<user>:<password>@db:5432/<db>`.
 - **REDIS_URL** — keep `redis://redis:6379/0` (the bundled `redis` service;
   also the default when unset).
+- **LLM_PROVIDER / GEMINI_API_KEY / GEMINI_MODEL** — see
+  [LLM provider](#llm-provider-gemini--anthropic). Default: Gemini.
 - Leave `DEV_MODE`, `DEV_TOKEN`, `DEV_USER_ID` unset.
+
+## LLM provider (Gemini / Anthropic)
+
+Receipt photos, PDF receipts, bank screenshots and `/search` queries go to
+the provider selected by `LLM_PROVIDER` (`gemini` by default, or `anthropic`).
+
+**Gemini (default):**
+
+1. Create a key in Google AI Studio → **Get API key**
+   (https://aistudio.google.com/apikey) and put it in `GEMINI_API_KEY`.
+2. `GEMINI_MODEL` defaults to `gemini-3.8-flash` (stable, image input,
+   structured output, free tier — checked against ai.google.dev on
+   2026-09-25). Google publishes free-tier limits only per account: open
+   AI Studio → **Rate limits** and check requests/day for this model. Each
+   receipt photo costs **two** requests (bank-screenshot detection, then
+   receipt parsing); a PDF receipt or a `/search` query costs one.
+   If the daily limit is too low, switch `GEMINI_MODEL` to a Flash-Lite model
+   from the same page (e.g. `gemini-3.5-flash-lite`) and re-check quality.
+3. **Privacy:** on the free tier Google may use submitted content — here,
+   photos of receipts and bank screens — to improve its products (see the
+   "Used to improve our products" row on the pricing page). The paid tier
+   does not.
+
+**Anthropic:** set `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`.
+
+Switching: edit `.env`, then `dc up -d bot api` (the provider is read at
+startup). When the provider rejects requests for quota, balance, rate limits,
+auth/billing or an outage, users get "recognition temporarily unavailable —
+add the expense with /add or upload a bank statement" instead of a generic
+error; the cause is logged by `bot` (`dc logs bot | grep -i "provider unavailable"`).
+
+Item-name normalization (`bot/services/normalization.py`) still uses
+Anthropic only; without a working Anthropic key receipts are saved with the
+raw item names (product statistics group less well).
 
 ## 3. First start with data from the dump
 

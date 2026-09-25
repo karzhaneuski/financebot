@@ -3,7 +3,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     BOT_TOKEN: str
-    ANTHROPIC_API_KEY: str
+    # LLM backend for receipt/screenshot vision and /search parsing:
+    # "gemini" (default) or "anthropic". Only the selected provider's key is
+    # required.
+    LLM_PROVIDER: str = "gemini"
+    GEMINI_API_KEY: str | None = None
+    GEMINI_MODEL: str = "gemini-3.8-flash"
+    ANTHROPIC_API_KEY: str | None = None
     DATABASE_URL: str
     REDIS_URL: str
     EXCHANGE_API_KEY: str

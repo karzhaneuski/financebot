@@ -31,6 +31,7 @@ from bot.services import budget as budget_service
 from bot.services.anomaly import check_anomaly
 from bot.services.currency import convert_to_pln
 from bot.services.normalization import normalize_item_names
+from bot.services.llm import LLMUnavailableError
 from bot.services.vision import parse_bank_transaction_screenshot, parse_receipt
 from bot.utils.formatters import (
     currency_flag,
@@ -42,6 +43,14 @@ from bot.utils.formatters import (
 
 logger = logging.getLogger(__name__)
 router = Router()
+
+# Shown when the vision provider is out of quota/balance or down — the user
+# can still record the expense without image recognition.
+VISION_UNAVAILABLE_TEXT = (
+    "⏳ Распознавание чеков временно недоступно. "
+    "Можно добавить трату вручную командой /add "
+    "или загрузить выписку банка (Erste PDF или Revolut CSV)."
+)
 
 _ERSTE_KEY_TTL = 600  # 10 minutes
 _REVOLUT_KEY_TTL = 600  # 10 minutes
@@ -93,6 +102,11 @@ async def handle_receipt_photo(message: Message, bot: Bot, session: AsyncSession
     # Try Erste Bank transaction screenshot detection first.
     try:
         bank_tx = await parse_bank_transaction_screenshot(image_bytes)
+    except LLMUnavailableError as e:
+        # The receipt parser uses the same provider — no point falling back.
+        logger.warning(f"Vision provider unavailable: {e}")
+        await status_msg.edit_text(VISION_UNAVAILABLE_TEXT)
+        return
     except Exception as e:
         logger.warning(f"Bank screenshot detection failed, falling back to receipt parser: {e}")
         bank_tx = None
@@ -143,6 +157,10 @@ async def handle_receipt_photo(message: Message, bot: Bot, session: AsyncSession
 
     try:
         data = await parse_receipt(image_bytes)
+    except LLMUnavailableError as e:
+        logger.warning(f"Vision provider unavailable: {e}")
+        await status_msg.edit_text(VISION_UNAVAILABLE_TEXT)
+        return
     except ValueError as e:
         logger.warning(f"Receipt parse error: {e}")
         await status_msg.edit_text(
@@ -435,6 +453,10 @@ async def _handle_pdf_receipt(
 
     try:
         data = await parse_receipt(image_bytes)
+    except LLMUnavailableError as e:
+        logger.warning(f"Vision provider unavailable: {e}")
+        await status_msg.edit_text(VISION_UNAVAILABLE_TEXT)
+        return
     except ValueError as e:
         logger.warning(f"Receipt parse error from PDF: {e}")
         await status_msg.edit_text(
