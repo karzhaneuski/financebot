@@ -48,6 +48,41 @@ async def test_parse_cash_flag(no_llm):
     assert parsed.get("include_cash") is True
 
 
+
+# EN / PL fallback rules. today = Monday 2026-08-24.
+@pytest.mark.parametrize("query, expected", [
+    ("Kaufland over 200 in May", {"amount_min": 200.0, "date_from": date(2026, 5, 1), "date_to": date(2026, 5, 31)}),
+    ("purchases under 49.99 last month", {"amount_max": 49.99, "date_from": date(2026, 7, 1), "date_to": date(2026, 7, 31)}),
+    ("groceries this week", {"category": "groceries", "date_from": date(2026, 8, 24), "date_to": date(2026, 8, 30)}),
+    ("pharmacy last week", {"category": "pharmacy", "date_from": date(2026, 8, 17), "date_to": date(2026, 8, 23)}),
+    ("between 10 and 20 this month", {"amount_min": 10.0, "amount_max": 20.0,
+                                       "date_from": date(2026, 8, 1), "date_to": date(2026, 8, 31)}),
+    ("cash withdrawals this year", {"include_cash": True, "date_from": date(2026, 1, 1), "date_to": date(2026, 12, 31)}),
+    ("Kaufland w czerwcu", {"date_from": date(2026, 6, 1), "date_to": date(2026, 6, 30)}),
+    ("zakupy powyżej 200 zł w maju", {"amount_min": 200.0, "date_from": date(2026, 5, 1), "date_to": date(2026, 5, 31)}),
+    ("apteka za kwiecień", {"category": "pharmacy", "date_from": date(2026, 4, 1), "date_to": date(2026, 4, 30)}),
+    ("wydatki poniżej 30,5 w zeszłym miesiącu", {"amount_max": 30.5, "date_from": date(2026, 7, 1), "date_to": date(2026, 7, 31)}),
+    ("kawiarnie w tym tygodniu", {"category": "cafe", "date_from": date(2026, 8, 24), "date_to": date(2026, 8, 30)}),
+    ("od 50 do 100 z lutego", {"amount_min": 50.0, "amount_max": 100.0,
+                               "date_from": date(2026, 2, 1), "date_to": date(2026, 2, 28)}),
+    ("wypłaty z bankomatu w poprzednim tygodniu", {"include_cash": True,
+                                                  "date_from": date(2026, 8, 17), "date_to": date(2026, 8, 23)}),
+])
+async def test_fallback_parses_english_and_polish(no_llm, query, expected):
+    from bot.services.search_parser import parse_search_query
+    parsed, used_fallback = await parse_search_query(query, today=date(2026, 8, 24))
+    assert used_fallback is True
+    assert parsed == expected
+
+
+@pytest.mark.parametrize("query", ["May's Bakery", "current expenses", "Marzena", "Lipsk"])
+async def test_fallback_en_pl_no_false_positives(no_llm, query):
+    """Month names need a preposition; 'rent' must not match inside 'current'."""
+    from bot.services.search_parser import parse_search_query
+    parsed, _ = await parse_search_query(query, today=date(2026, 8, 24))
+    assert parsed == {}
+
+
 # ── search_transactions ───────────────────────────────────────────────────────
 
 async def test_search_fuzzy_merchant_and_dates(db_session):

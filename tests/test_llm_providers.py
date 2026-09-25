@@ -223,13 +223,14 @@ async def test_gemini_search_query_parsed(gemini):
         "merchant": "Kaufland", "category": None, "date_from": "2026-06-01", "date_to": "2026-06-30",
         "amount_min": 200, "amount_max": None, "include_cash": False,
     })
-    filters, used_fallback = await parse_search_query("траты в Kaufland дороже 200 за июнь")
+    filters, used_fallback = await parse_search_query("траты в Kaufland дороже 200 за июнь", today=date(2026, 8, 24))
     assert used_fallback is False
     assert filters == {"merchant": "Kaufland", "date_from": date(2026, 6, 1),
                        "date_to": date(2026, 6, 30), "amount_min": 200.0, "include_cash": False}
     kwargs = gemini.await_args.kwargs
     assert kwargs["config"].response_json_schema == SEARCH_SCHEMA
     assert kwargs["contents"] == ["траты в Kaufland дороже 200 за июнь"]  # no image
+    assert kwargs["config"].system_instruction.endswith("Today's date: 2026-08-24 (Monday).")
 
 
 async def test_search_falls_back_when_quota_exhausted(gemini):

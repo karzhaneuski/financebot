@@ -9,8 +9,6 @@
 
 ## Search (`/search`)
 
-- **EN/PL query rules** in the `search_parser` prompt and the regex fallback
-  (planned next). Until then EN/PL help suggests store-name-only queries.
 - The regex fallback never extracts a merchant, so a bare store name
   ("Kaufland") matches everything when the LLM is unavailable (the result
   carries the "simplified rules" warning).

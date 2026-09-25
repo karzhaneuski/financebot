@@ -35,7 +35,7 @@ def help_text() -> str:
         "💰 /budget — budgets by category\n"
         "✏️ /add — add an expense manually\n"
         "📤 /export — export to an Excel file\n"
-        "🔍 /search — find expenses by store name (e.g. “Kaufland”)\n"
+        "🔍 /search — search expenses in plain text (e.g. “Kaufland in June”)\n"
         "🎁 /wrapped — your year in one picture\n"
         "👥 /split — split a receipt with other people\n"
         "🌐 /language — change language\n"

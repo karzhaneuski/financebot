@@ -149,7 +149,7 @@ Rules:
 /add            — manual expense entry
 /export         — export to Excel
 /reports        — daily/weekly/monthly report settings
-/search, /find  — natural-language transaction search (Haiku parser + fallback)
+/search, /find  — natural-language transaction search (LLM parser + regex fallback)
 /wrapped        — year-in-review summary image
 /split          — split a receipt's items between personal/not-personal
 /language       — change the bot language (ru / en / pl)
@@ -214,8 +214,10 @@ Rules:
   `original_amount` (the full native-currency `total`, *not* scaled by the
   split share). For a split receipt these two figures are not proportional —
   don't assume `original_amount` reflects only the personal portion.
-- **`/search` understands Russian only** (Haiku prompt and regex fallback);
-  EN/PL query rules are a separate follow-up.
+- **`/search` languages**: the LLM prompt and the regex fallback have rules
+  for Russian, English and Polish (months incl. Polish inflections, relative
+  periods, amount bounds, categories, cash). The fallback never extracts a
+  merchant (see BACKLOG.md).
 - **`/search` fallback honesty**: when the Haiku query parser
   (`search_parser.parse_search_query`) fails, `/search` falls back to a
   regex parser and appends "⚠️ Поиск выполнен по упрощённым правилам —
