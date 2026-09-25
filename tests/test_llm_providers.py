@@ -280,9 +280,9 @@ async def test_photo_shows_temporarily_unavailable_message(monkeypatch, screensh
     message = _Message()
     await rh.handle_receipt_photo(message, _Bot(), session=None, redis=None)
 
-    assert message.status.texts[-1] == rh.VISION_UNAVAILABLE_TEXT
-    assert "временно недоступно" in rh.VISION_UNAVAILABLE_TEXT
-    assert "/add" in rh.VISION_UNAVAILABLE_TEXT and "выписк" in rh.VISION_UNAVAILABLE_TEXT
+    assert message.status.texts[-1] == rh.vision_unavailable_text()
+    assert "временно недоступно" in rh.vision_unavailable_text()
+    assert "/add" in rh.vision_unavailable_text() and "выписк" in rh.vision_unavailable_text()
 
 
 async def test_pdf_receipt_shows_temporarily_unavailable_message(monkeypatch):
@@ -294,7 +294,7 @@ async def test_pdf_receipt_shows_temporarily_unavailable_message(monkeypatch):
     monkeypatch.setattr(rh, "_pdf_pages_to_jpeg", lambda b: [b"jpeg"])
     status = _Status()
     await rh._handle_pdf_receipt(_Message(), status, b"%PDF", session=None, redis=None, bot=_Bot())
-    assert status.texts[-1] == rh.VISION_UNAVAILABLE_TEXT
+    assert status.texts[-1] == rh.vision_unavailable_text()
 
 
 def _gemini_error_with_reason(code: int, status: str, message: str, reason: str):
@@ -339,4 +339,4 @@ async def test_invalid_key_photo_shows_unavailable_message(gemini):
         400, "INVALID_ARGUMENT", "API key not valid. Please pass a valid API key.", "API_KEY_INVALID")
     message = _Message()
     await rh.handle_receipt_photo(message, _Bot(), session=None, redis=None)
-    assert message.status.texts[-1] == rh.VISION_UNAVAILABLE_TEXT
+    assert message.status.texts[-1] == rh.vision_unavailable_text()

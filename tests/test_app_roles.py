@@ -53,6 +53,9 @@ def started(monkeypatch):
         def __init__(self, *a, **k):
             self.session = type("S", (), {"close": _noop})()
 
+        async def set_my_commands(self, *a, **k):
+            return None
+
     class _Redis:
         aclose = staticmethod(_noop)
 
