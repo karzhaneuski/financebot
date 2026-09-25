@@ -30,7 +30,7 @@ def test_format_forecast_line_skips_early_month():
 def test_format_forecast_line_formats_with_thousand_separator():
     forecast = {"spent_so_far": 3250.0, "days_elapsed": 23, "days_in_month": 30, "projected_total": 4250.0}
     line = format_forecast_line(forecast)
-    assert line == "📈 Прогноз на конец месяца: ~4 250 PLN (при текущем темпе трат)"
+    assert line == "📈 Прогноз на конец месяца: ~4\u00a0250 PLN (при текущем темпе трат)"
 
 
 def test_format_forecast_line_rounds_projected_total():

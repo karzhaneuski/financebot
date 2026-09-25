@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.db import crud
 from bot.i18n import _
+from bot.utils.formatters import format_number
 
 _MIN_DAYS_ELAPSED = 3
 
@@ -30,5 +31,5 @@ def format_forecast_line(forecast: dict) -> str | None:
     """Return the forecast line, or None if there's too little data this month to project."""
     if forecast["days_elapsed"] < _MIN_DAYS_ELAPSED:
         return None
-    amount = f"{round(forecast['projected_total']):,}".replace(",", " ")
+    amount = format_number(round(forecast['projected_total']), 0)
     return _("📈 End-of-month forecast: ~{amount} PLN (at the current spending rate)").format(amount=amount)

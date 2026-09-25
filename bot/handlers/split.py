@@ -10,6 +10,7 @@ from bot.db import crud
 from bot.i18n import _
 from bot.markers import display_name
 from bot.services.wrapped import build_wrapped_caption, collect_wrapped_stats, render_wrapped_image
+from bot.utils.formatters import format_number
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -46,7 +47,7 @@ async def cmd_wrapped(message: Message, session: AsyncSession) -> None:
 def _receipt_label(r) -> str:
     date_str = r.date.strftime("%d.%m") if r.date else "?"
     store = (display_name(r.store) or "?")[:20]
-    return f"{date_str} · {store} · {r.personal_amount():.2f} PLN"
+    return f"{date_str} · {store} · {format_number(r.personal_amount())} PLN"
 
 
 async def _show_receipt_picker(message: Message, session: AsyncSession, user_id: int) -> None:
@@ -123,7 +124,7 @@ async def _render_split_state(target_message, session: AsyncSession, redis, user
     builder = InlineKeyboardBuilder()
     for it in receipt.items:
         is_mine = it.id in mine
-        label = ("✅" if is_mine else "❌") + f" {display_name(it.name)[:24]} · {float(it.total_price):.2f}"
+        label = ("✅" if is_mine else "❌") + f" {display_name(it.name)[:24]} · {format_number(float(it.total_price))}"
         action = "un" if is_mine else "on"
         builder.button(text=label, callback_data=f"splittog:{receipt_id}:{it.id}:{action}")
     builder.adjust(1)
@@ -140,8 +141,8 @@ async def _render_split_state(target_message, session: AsyncSession, redis, user
     text = (
         _("Mark what was bought *for you* (receipt of {total} {currency} ≈ {total_pln} PLN):\n\n"
           "Yours right now: *{personal} PLN*").format(
-            total=f"{float(receipt.total):.2f}", currency=receipt.currency,
-            total_pln=f"{float(receipt.total_pln):.2f}", personal=f"{personal_pln:.2f}",
+            total=format_number(float(receipt.total)), currency=receipt.currency,
+            total_pln=format_number(float(receipt.total_pln)), personal=format_number(personal_pln),
         )
     )
     try:
@@ -204,7 +205,7 @@ async def split_done_callback(call: CallbackQuery, session: AsyncSession, redis)
 
     await call.message.edit_text(
         _("✅ Updated: statistics will now count *{new} PLN* instead of {old} PLN").format(
-            new=f"{personal_pln:.2f}", old=f"{old_personal:.2f}"
+            new=format_number(personal_pln), old=format_number(old_personal)
         ),
         parse_mode="Markdown",
     )

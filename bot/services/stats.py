@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.db import crud
 from bot.i18n import _, ngettext
 from bot.markers import display_name
-from bot.utils.formatters import format_category
+from bot.utils.formatters import format_category, format_number
 
 CATEGORY_EMOJI = {
     "groceries": "🛒",
@@ -53,7 +53,7 @@ async def format_stats_message(stats: dict, period_label: str) -> str:
     total = stats["total_pln"]
     lines = [
         _("📊 *Statistics for {period}*").format(period=period_label) + "\n",
-        _("💰 Total spent: *{amount} PLN*").format(amount=f"{total:.2f}"),
+        _("💰 Total spent: *{amount} PLN*").format(amount=format_number(total)),
         _("🧾 Number of receipts: *{count}*").format(count=stats["receipt_count"]),
     ]
 
@@ -63,12 +63,12 @@ async def format_stats_message(stats: dict, period_label: str) -> str:
             pct = round(row["total"] / total * 100) if total else 0
             emoji = CATEGORY_EMOJI.get(row["category"], "📦")
             name = format_category(row["category"])
-            lines.append(f"  {emoji} {name} — {row['total']:.2f} PLN ({pct}%)")
+            lines.append(f"  {emoji} {name} — {format_number(row['total'])} PLN ({pct}%)")
 
     if stats["by_store"]:
         lines.append("\n" + _("🏪 *Top stores:*"))
         for i, row in enumerate(stats["by_store"], 1):
-            lines.append(f"  {i}. {display_name(row['store'])} — {row['total']:.2f} PLN")
+            lines.append(f"  {i}. {display_name(row['store'])} — {format_number(row['total'])} PLN")
 
     if stats["top_items"]:
         lines.append("\n" + _("🔁 *Frequently bought:*"))
@@ -77,11 +77,11 @@ async def format_stats_message(stats: dict, period_label: str) -> str:
             bought = ngettext("bought {n} time", "bought {n} times", n).format(n=n)
             lines.append(
                 f"  • {display_name(row['name'])} — "
-                + _("{bought}, spent {amount} PLN").format(bought=bought, amount=f"{row['total']:.2f}")
+                + _("{bought}, spent {amount} PLN").format(bought=bought, amount=format_number(row['total']))
             )
 
     cash = stats.get("cash_withdrawals_pln", 0.0)
     if cash:
-        lines.append("\n" + _("💵 Cash withdrawals: *{amount} PLN*").format(amount=f"{cash:.2f}"))
+        lines.append("\n" + _("💵 Cash withdrawals: *{amount} PLN*").format(amount=format_number(cash)))
 
     return "\n".join(lines)

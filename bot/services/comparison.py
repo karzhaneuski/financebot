@@ -7,7 +7,7 @@ from bot.db import crud
 from bot.categories import category_label
 from bot.i18n import _
 from bot.markers import display_name
-from bot.utils.formatters import month_name
+from bot.utils.formatters import format_number, month_name
 
 CATEGORY_EMOJI = {
     "groceries": "🛒",
@@ -89,7 +89,7 @@ def _diff_line(curr: float, prev: float) -> str:
         pct_sign = "+" if pct >= 0 else ""
         pct_str = f" ({pct_sign}{pct:.0f}%)"
     arrow = _arrow(curr, prev)
-    return "   " + _("Difference: {diff} PLN").format(diff=f"{sign}{diff:.2f}") + f"{pct_str} {arrow}"
+    return "   " + _("Difference: {diff} PLN").format(diff=f"{sign}{format_number(diff)}") + f"{pct_str} {arrow}"
 
 
 def _budget_bar(spent: float, limit: float) -> str:
@@ -128,15 +128,15 @@ async def build_comparison_report(
     lines = [_("🔄 *Comparison — {current} vs {previous}*").format(current=curr_label, previous=prev_label) + "\n"]
 
     lines.append(_("💸 *Expenses:*"))
-    lines.append(f"   {curr_label}:  {curr_exp:.2f} PLN")
-    lines.append(f"   {prev_label}: {prev_exp:.2f} PLN")
+    lines.append(f"   {curr_label}:  {format_number(curr_exp)} PLN")
+    lines.append(f"   {prev_label}: {format_number(prev_exp)} PLN")
     lines.append(_diff_line(curr_exp, prev_exp))
 
     if curr_inc > 0 or prev_inc > 0:
         lines.append("")
         lines.append(_("💰 *Income:*"))
-        lines.append(f"   {curr_label}:  {curr_inc:.2f} PLN")
-        lines.append(f"   {prev_label}: {prev_inc:.2f} PLN")
+        lines.append(f"   {curr_label}:  {format_number(curr_inc)} PLN")
+        lines.append(f"   {prev_label}: {format_number(prev_inc)} PLN")
         lines.append(_diff_line(curr_inc, prev_inc))
 
     all_cats = sorted(
@@ -160,7 +160,7 @@ async def build_comparison_report(
                 s = "+" if pct >= 0 else ""
                 pct_str = f"  ({s}{pct:.0f}%)"
             lines.append(f"   {emoji} *{name}*")
-            lines.append(f"      {curr_label}: {cv:.2f} PLN  →  {prev_label}: {pv:.2f} PLN{pct_str} {arrow}")
+            lines.append(f"      {curr_label}: {format_number(cv)} PLN  →  {prev_label}: {format_number(pv)} PLN{pct_str} {arrow}")
 
     top_n = 3
     curr_top = curr_stores[:top_n]
@@ -173,8 +173,8 @@ async def build_comparison_report(
         for i in range(max_rows):
             c = curr_top[i] if i < len(curr_top) else None
             p = prev_top[i] if i < len(prev_top) else None
-            c_str = f"{i+1}. {display_name(c['store'])[:14]} {c['total_pln']:.0f} PLN" if c else ""
-            p_str = f"{i+1}. {display_name(p['store'])[:14]} {p['total_pln']:.0f} PLN" if p else ""
+            c_str = f"{i+1}. {display_name(c['store'])[:14]} {format_number(c['total_pln'], 0)} PLN" if c else ""
+            p_str = f"{i+1}. {display_name(p['store'])[:14]} {format_number(p['total_pln'], 0)} PLN" if p else ""
             lines.append(f"   {c_str}  |  {p_str}")
 
     if budgets:
@@ -189,6 +189,6 @@ async def build_comparison_report(
             emoji = CATEGORY_EMOJI.get(cat, "📦")
             name = category_label(cat)
             status = "🚨" if pct >= 100 else "⚠️" if pct >= 80 else ""
-            lines.append(f"   {emoji} {name}  {spent:.0f} / {limit:.0f} PLN  {bar}  {pct:.0f}%{' ' + status if status else ''}")
+            lines.append(f"   {emoji} {name}  {format_number(spent, 0)} / {format_number(limit, 0)} PLN  {bar}  {pct:.0f}%{' ' + status if status else ''}")
 
     return "\n".join(lines)

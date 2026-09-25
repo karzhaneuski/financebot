@@ -15,7 +15,7 @@ from bot.categories import category_label
 from bot.i18n import _, ngettext
 from bot.markers import display_name
 from bot.services.charts import PALETTE
-from bot.utils.formatters import format_day_month, month_name
+from bot.utils.formatters import format_day_month, format_number, month_name
 
 logger = logging.getLogger(__name__)
 
@@ -123,7 +123,7 @@ def render_wrapped_image(stats: dict) -> bytes:
     # ── Total card ────────────────────────────────────────────────────────
     card_total = ax_at(0, 0.80, 1, 0.12)
     _card(fig, 0.06, 0.815, 0.88, 0.095)
-    total_str = f"{stats['total']:,.0f}".replace(",", " ")
+    total_str = format_number(stats['total'], 0)
     card_total.text(0.5, 0.72, f"{total_str} PLN", ha="center", fontsize=30,
                     fontweight="bold", color=_TEXT, transform=card_total.transAxes)
     tx_count = stats["tx_count"]
@@ -141,7 +141,7 @@ def render_wrapped_image(stats: dict) -> bytes:
         name = category_label(cat["category"])
         row1.text(0.27, 0.75, _("FAVOURITE CATEGORY"), ha="center", fontsize=9,
                   color="#8A8885", transform=row1.transAxes)
-        cat_amt = f"{cat['total_pln']:,.0f}".replace(",", " ")
+        cat_amt = format_number(cat['total_pln'], 0)
         row1.text(0.27, 0.48, f"{name} — {cat_amt} PLN",
                   ha="center", fontsize=13, fontweight="bold", color=_TEXT, transform=row1.transAxes)
         row1.text(0.27, 0.20, _("{pct} of all spending").format(pct=f"{pct}%"), ha="center", fontsize=10,
@@ -157,7 +157,7 @@ def render_wrapped_image(stats: dict) -> bytes:
         store = (display_name(priciest.store) or "?")[:16]
         row1.text(0.73, 0.75, _("MOST EXPENSIVE RECEIPT"), ha="center", fontsize=9,
                   color="#8A8885", transform=row1.transAxes)
-        priciest_amt = f"{priciest.personal_amount():,.0f}".replace(",", " ")
+        priciest_amt = format_number(priciest.personal_amount(), 0)
         row1.text(0.73, 0.48, f"{priciest_amt} PLN",
                   ha="center", fontsize=13, fontweight="bold", color=_TEXT, transform=row1.transAxes)
         row1.text(0.73, 0.20, f"{store} · {date_str}", ha="center", fontsize=10,
@@ -189,7 +189,7 @@ def render_wrapped_image(stats: dict) -> bytes:
     if visited:
         visits = visited["visits"]
         visits_str = ngettext("{n} visit", "{n} visits", visits).format(n=visits)
-        visited_amt = f"{visited['total_pln']:,.0f}".replace(",", " ")
+        visited_amt = format_number(visited['total_pln'], 0)
         row3.text(0.5, 0.88, _("Most visited store: {store} — {visits}, {amount} PLN").format(
                       store=display_name(visited["store"])[:24], visits=visits_str, amount=visited_amt),
                   ha="center", fontsize=11, fontweight="bold", color=_TEXT, transform=row3.transAxes)
@@ -203,7 +203,7 @@ def render_wrapped_image(stats: dict) -> bytes:
     y = 0.45
     for i, p in enumerate(products, 1):
         name = (p["normalized_name"] or "?").title()[:28]
-        spent_str = f"{p['total_spent']:,.0f}".replace(",", " ")
+        spent_str = format_number(p['total_spent'], 0)
         row3.text(0.18, y, f"{i}. {name}", fontsize=11, color=_TEXT, transform=row3.transAxes)
         row3.text(0.82, y, f"{spent_str} PLN", fontsize=11, color=_TEXT,
                   ha="right", transform=row3.transAxes)
@@ -229,7 +229,7 @@ def render_wrapped_image(stats: dict) -> bytes:
 def build_wrapped_caption(stats: dict) -> str:
     """Short celebratory caption mirroring the image numbers."""
     year = stats["year"]
-    total_str = f"{stats['total']:,.2f}".replace(",", " ")
+    total_str = format_number(stats['total'])
     tx_count = stats["tx_count"]
     lines = [_("🎉 Your {year} in FinanceBot!").format(year=year),
              ngettext("💸 Spent: *{amount} PLN* in {n} transaction",
@@ -239,14 +239,14 @@ def build_wrapped_caption(stats: dict) -> str:
     if cat:
         pct = round(cat["total_pln"] / stats["total"] * 100)
         name = category_label(cat["category"])
-        cat_amt = f"{cat['total_pln']:,.0f}".replace(",", " ")
+        cat_amt = format_number(cat['total_pln'], 0)
         lines.append(_("🏆 Top category: {name} — {amount} PLN ({pct})").format(name=name, amount=cat_amt, pct=f"{pct}%"))
 
     priciest = stats.get("priciest")
     if priciest is not None:
         d = priciest.date
         date_part = f", {format_day_month(d)}" if d else ""
-        priciest_amt = f"{priciest.personal_amount():,.2f}".replace(",", " ")
+        priciest_amt = format_number(priciest.personal_amount())
         lines.append(_("💎 Most expensive receipt: {amount} PLN — {store}").format(
             amount=priciest_amt, store=display_name(priciest.store) or "?") + date_part)
 
@@ -259,7 +259,7 @@ def build_wrapped_caption(stats: dict) -> str:
 
     top_m = stats.get("top_month_idx")
     if top_m is not None:
-        m_amount = f"{stats['monthly'][top_m]:,.0f}".replace(",", " ")
+        m_amount = format_number(stats['monthly'][top_m], 0)
         lines.append(_("📈 Most expensive month: {month} — {amount} PLN").format(
             month=month_name(top_m + 1), amount=m_amount))
 

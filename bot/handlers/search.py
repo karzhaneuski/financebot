@@ -12,7 +12,7 @@ from bot.db.models import Item
 from bot.services.search_parser import parse_search_query
 from bot.i18n import _, ngettext
 from bot.markers import display_name
-from bot.utils.formatters import format_date
+from bot.utils.formatters import format_date, format_number
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -72,10 +72,10 @@ def _build_results_text(data: dict, page: int) -> str:
         amount = receipt.personal_amount()
         store = display_name(receipt.store) or "?"
         date_str = format_date(receipt.date) if receipt.date else "—"
-        lines.append(f"• {date_str} — {store} — {amount:.2f} PLN {_receipt_emoji(receipt)}")
+        lines.append(f"• {date_str} — {store} — {format_number(amount)} PLN {_receipt_emoji(receipt)}")
 
     count = ngettext("{n} transaction", "{n} transactions", len(ids)).format(n=len(ids))
-    lines.append("\n" + _("Total: {transactions}, sum {amount} PLN").format(transactions=count, amount=f"{total_sum:.2f}"))
+    lines.append("\n" + _("Total: {transactions}, sum {amount} PLN").format(transactions=count, amount=format_number(total_sum)))
     if len(ids) >= SEARCH_RESULT_LIMIT:
         lines.append(_("(showing the first {n} matches)").format(n=SEARCH_RESULT_LIMIT))
     if fallback:

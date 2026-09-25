@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.db import crud
 from bot.i18n import _
-from bot.utils.formatters import format_category, format_month, format_pln
+from bot.utils.formatters import format_category, format_month, format_number, format_pln
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ async def get_budget_summary(session: AsyncSession, user_id: int) -> str:
         alert = _alert_icon(raw_pct)
         label = f"{emoji} {format_category(cat)}"
         lines.append(
-            f"{label:<22} {spent:.2f} / {limit:.2f} PLN  {bar}  {pct}%{alert}"
+            f"{label:<22} {format_number(spent)} / {format_number(limit)} PLN  {bar}  {pct}%{alert}"
         )
 
     return "\n".join(lines)
@@ -81,14 +81,14 @@ async def get_budget_status_text(session: AsyncSession, user_id: int, category: 
 
     lines = [
         _("✅ *Budget set!*"),
-        f"{emoji} {format_category(category)} — " + _("{amount} PLN/month").format(amount=f"{limit:.2f}"),
+        f"{emoji} {format_category(category)} — " + _("{amount} PLN/month").format(amount=format_number(limit)),
         "",
-        _("Spent this month: {amount} PLN ({pct})").format(amount=f"{spent:.2f}", pct=f"{pct}%"),
+        _("Spent this month: {amount} PLN ({pct})").format(amount=format_number(spent), pct=f"{pct}%"),
     ]
     if spent < limit:
-        lines.append(_("Remaining: {amount} PLN").format(amount=f"{limit - spent:.2f}"))
+        lines.append(_("Remaining: {amount} PLN").format(amount=format_number(limit - spent)))
     else:
-        lines.append(_("Over by: {amount} PLN").format(amount=f"{spent - limit:.2f}") + " 🚨")
+        lines.append(_("Over by: {amount} PLN").format(amount=format_number(spent - limit)) + " 🚨")
 
     return "\n".join(lines)
 
@@ -117,8 +117,8 @@ async def check_and_notify_budgets(session: AsyncSession, user_id: int, bot: Bot
                     user_id,
                     _("🚨 *{category} budget exceeded!*\n"
                       "{spent} / {limit} PLN — over by {overage} PLN").format(
-                        category=format_category(cat), spent=f"{spent:.2f}", limit=f"{limit:.2f}",
-                        overage=f"{overage:.2f}",
+                        category=format_category(cat), spent=format_number(spent), limit=format_number(limit),
+                        overage=format_number(overage),
                     ),
                     parse_mode="Markdown",
                 )
@@ -129,8 +129,8 @@ async def check_and_notify_budgets(session: AsyncSession, user_id: int, bot: Bot
                     user_id,
                     _("⚠️ *{category} budget: {pct} spent!*\n"
                       "{spent} / {limit} PLN — {remaining} PLN left").format(
-                        category=format_category(cat), pct=f"{pct:.0f}%", spent=f"{spent:.2f}",
-                        limit=f"{limit:.2f}", remaining=f"{remaining:.2f}",
+                        category=format_category(cat), pct=f"{pct:.0f}%", spent=format_number(spent),
+                        limit=format_number(limit), remaining=format_number(remaining),
                     ),
                     parse_mode="Markdown",
                 )
@@ -158,13 +158,13 @@ async def check_budget_alerts(session: AsyncSession, user_id: int) -> list[str]:
         if spent >= limit:
             warnings.append(
                 _("🚨 '{category}' budget exceeded ({spent} / {limit} PLN)").format(
-                    category=format_category(cat), spent=f"{spent:.2f}", limit=f"{limit:.2f}"
+                    category=format_category(cat), spent=format_number(spent), limit=format_number(limit)
                 )
             )
         elif spent >= limit * 0.8:
             warnings.append(
                 _("⚠️ '{category}' budget {pct} used ({spent} / {limit} PLN)").format(
-                    category=format_category(cat), pct=f"{pct:.0f}%", spent=f"{spent:.2f}", limit=f"{limit:.2f}"
+                    category=format_category(cat), pct=f"{pct:.0f}%", spent=format_number(spent), limit=format_number(limit)
                 )
             )
 

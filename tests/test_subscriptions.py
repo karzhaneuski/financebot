@@ -49,8 +49,8 @@ def test_build_subscriptions_text_lists_sorted_and_totals():
     ]
     text = _build_subscriptions_text(subs)
 
-    assert "🎵 Spotify — 27.14 PLN/мес" in text
+    assert "🎵 Spotify — 27,14 PLN/мес" in text
     assert "Следующее списание: ~15 сентября" in text
-    assert "🤖 Claude — 95.50 PLN/мес" in text
+    assert "🤖 Claude — 95,50 PLN/мес" in text
     assert "Следующее списание: неизвестно (одно списание)" in text
-    assert "Итого в месяц: ~122.64 PLN" in text
+    assert "Итого в месяц: ~122,64 PLN" in text

@@ -38,6 +38,7 @@ from bot.utils.formatters import (
     format_category,
     format_date_str,
     format_items_list,
+    format_number,
     format_receipt_amount,
 )
 from bot.keyboards.inline import picker_label
@@ -97,11 +98,11 @@ def _format_anomaly_alert(receipt, category_display: str, anomaly: dict) -> str:
         "{amount} PLN at {store} — that's {multiplier}× the average receipt in the "
         "“{category}” category (usually ~{average} PLN)"
     ).format(
-        amount=f"{float(receipt.total_pln):.2f}",
+        amount=format_number(float(receipt.total_pln)),
         store=display_name(receipt.store) or "?",
-        multiplier=f"{anomaly['multiplier']:.1f}",
+        multiplier=format_number(anomaly['multiplier'], 1),
         category=category_display,
-        average=f"{anomaly['category_avg']:.0f}",
+        average=format_number(anomaly['category_avg'], 0),
     )
 
 
@@ -309,17 +310,17 @@ async def handle_document(message: Message, bot: Bot, session: AsyncSession, red
         _("🏦 *Erste Bank Polska — statement recognized*") + "\n",
         _("📊 Transactions found: *{count}*").format(count=len(transactions)),
         _("  — expenses: {count} pcs. totalling *{amount} PLN*").format(
-            count=len(expenses), amount=f"{total_expenses:,.2f}".replace(",", " ")
+            count=len(expenses), amount=format_number(total_expenses)
         ),
         _("  — income: {count} pcs. totalling *{amount} PLN*").format(
-            count=len(incomes), amount=f"{total_incomes:,.2f}".replace(",", " ")
+            count=len(incomes), amount=format_number(total_incomes)
         ),
     ]
 
     if expenses:
         lines.append("\n" + _("*Last 5 expenses:*"))
         for t in expenses[-5:]:
-            lines.append(f"  {t['date']}  {t['category_display']}  -{abs(t['amount']):.2f} PLN")
+            lines.append(f"  {t['date']}  {t['category_display']}  -{format_number(abs(t['amount']))} PLN")
             lines.append(f"  _{(display_name(t['description']) or '')[:60]}_")
 
     lines.append("\n" + _("Tap the button to save all transactions to the database:"))
@@ -381,7 +382,7 @@ async def _handle_revolut_csv(
     lines = [
         _("💳 *Revolut — consolidated statement recognized*") + "\n",
         _("📊 Purchases found: *{count}*").format(count=len(transactions)),
-        _("💰 Total: *{amount} PLN*").format(amount=f"{total_pln:,.2f}".replace(",", " ")),
+        _("💰 Total: *{amount} PLN*").format(amount=format_number(total_pln)),
         "",
         _("*By currency:*") + " " + ", ".join(
             f"{currency_flag(c)} {c} ({n})" for c, n in sorted(by_currency.items())
@@ -392,7 +393,7 @@ async def _handle_revolut_csv(
     if recent:
         lines.append("\n" + _("*Latest purchases:*"))
         for t in recent:
-            lines.append(f"  {t['date']}  {t['category_display']}  -{t['amount']:.2f} {t['currency']}")
+            lines.append(f"  {t['date']}  {t['category_display']}  -{format_number(t['amount'])} {t['currency']}")
             lines.append(f"  _{(display_name(t['description']) or '')[:60]}_")
 
     lines.append("\n" + _("Tap the button to save all transactions to the database:"))
@@ -441,7 +442,7 @@ async def revolut_save_callback(
     total_pln = sum(t["total_pln"] for t in transactions)
     await call.message.edit_text(
         ngettext("✅ *Saved {n} transaction!*", "✅ *Saved {n} transactions!*", count).format(n=count) + "\n\n"
-        + _("💸 Expenses: {amount} PLN").format(amount=f"{total_pln:,.2f}".replace(",", " ")) + "\n\n"
+        + _("💸 Expenses: {amount} PLN").format(amount=format_number(total_pln)) + "\n\n"
         + _("Use /stats to see your statistics."),
         parse_mode="Markdown",
     )
@@ -450,7 +451,7 @@ async def revolut_save_callback(
         lines = [_duplicates_header(len(duplicates))]
         for d in duplicates:
             date_str = format_date_str(d["date"]) if d.get("date") else "?"
-            lines.append(f"  — {display_name(d['description'])} — {d['amount']:.2f} — {date_str}")
+            lines.append(f"  — {display_name(d['description'])} — {format_number(d['amount'])} — {date_str}")
         lines.append("\n" + _("They were not added again."))
         await call.message.answer("\n".join(lines))
 
@@ -586,8 +587,8 @@ async def erste_save_callback(
 
     await call.message.edit_text(
         ngettext("✅ *Saved {n} transaction!*", "✅ *Saved {n} transactions!*", count).format(n=count) + "\n\n"
-        + _("💸 Expenses: {amount} PLN").format(amount=f"{total_expenses:,.2f}".replace(",", " ")) + "\n"
-        + _("💰 Income: {amount} PLN").format(amount=f"{total_incomes:,.2f}".replace(",", " ")) + "\n\n"
+        + _("💸 Expenses: {amount} PLN").format(amount=format_number(total_expenses)) + "\n"
+        + _("💰 Income: {amount} PLN").format(amount=format_number(total_incomes)) + "\n\n"
         + _("Use /stats to see your statistics."),
         parse_mode="Markdown",
     )
@@ -596,7 +597,7 @@ async def erste_save_callback(
         lines = [_duplicates_header(len(duplicates))]
         for d in duplicates:
             date_str = format_date_str(d["date"]) if d.get("date") else "?"
-            lines.append(f"  — {display_name(d['description'])} — {d['amount']:.2f} PLN — {date_str}")
+            lines.append(f"  — {display_name(d['description'])} — {format_number(d['amount'])} PLN — {date_str}")
         lines.append("\n" + _("They were not added again."))
         await call.message.answer("\n".join(lines))
 
@@ -615,7 +616,7 @@ async def _ask_foreign_merchant(message: Message, pm: dict) -> None:
     await message.answer(
         _("💳 Card payment abroad: {amount} {currency} ({amount_pln} PLN)\n"
           "What should this payment be called? Enter the store/service name:").format(
-            amount=orig_amount, currency=orig_currency, amount_pln=f"{amount_pln:.2f}"
+            amount=orig_amount, currency=orig_currency, amount_pln=format_number(amount_pln)
         )
     )
 

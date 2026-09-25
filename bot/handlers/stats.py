@@ -31,7 +31,7 @@ from bot.services.forecast import format_forecast_line, get_month_forecast
 from bot.services.stats import format_stats_message, get_period_stats
 from bot.i18n import _, __, ngettext
 from bot.markers import display_name
-from bot.utils.formatters import currency_flag, format_date, format_day_month
+from bot.utils.formatters import currency_flag, format_date, format_day_month, format_number
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -67,13 +67,13 @@ def _fmt_qty(qty) -> str:
 
 def _fmt_volume(ml: int) -> str:
     if ml >= 1000:
-        return f"{ml / 1000:.1f} L"
+        return f"{format_number(ml / 1000, 1)} L"
     return f"{ml} ml"
 
 
 def _fmt_volume_long(ml: int) -> str:
     if ml >= 1000:
-        return f"{ml:,} ml ({ml / 1000:.1f} L)".replace(",", " ")
+        return f"{format_number(ml, 0)} ml ({format_number(ml / 1000, 1)} L)"
     return f"{ml} ml"
 
 
@@ -111,12 +111,12 @@ def _build_subscriptions_text(subs: list[dict]) -> str:
     for s in subs:
         emoji = _subscription_emoji(s["store"])
         lines.append(f" {emoji} {display_name(s['store'])} — "
-                     + _("{amount} PLN/mo").format(amount=f"{s['monthly_total_pln']:.2f}"))
+                     + _("{amount} PLN/mo").format(amount=format_number(s['monthly_total_pln'])))
         lines.append("    " + _("Next charge: {date}").format(date=_fmt_next_expected(s["next_expected"])))
         lines.append("")
         total += s["monthly_total_pln"]
 
-    lines.append(" " + _("Total per month: ~{amount} PLN").format(amount=f"{total:.2f}"))
+    lines.append(" " + _("Total per month: ~{amount} PLN").format(amount=format_number(total)))
     return "\n".join(lines)
 
 
@@ -136,7 +136,7 @@ def _build_product_detail_text(
             _("No purchases in this period."),
             "",
             _("*All time:* {amount} PLN, {qty} pcs").format(
-                amount=f"{all_time['total_spent']:.2f}", qty=_fmt_qty(all_time["total_qty"])
+                amount=format_number(all_time['total_spent']), qty=_fmt_qty(all_time["total_qty"])
             ) + vol_str,
         ]
         return "\n".join(lines)
@@ -144,7 +144,7 @@ def _build_product_detail_text(
     total_vol = detail.get("total_volume_ml")
     lines = [
         f"🥤 *{display} — {label}*",
-        _("Total spent: *{amount} PLN*").format(amount=f"{detail['total_spent']:.2f}"),
+        _("Total spent: *{amount} PLN*").format(amount=format_number(detail['total_spent'])),
         _("Bought: *{qty} pcs*").format(qty=_fmt_qty(detail["total_qty"])),
     ]
     if total_vol is not None:
@@ -155,7 +155,7 @@ def _build_product_detail_text(
             store_vol = s.get("total_volume_ml")
             vol_str = f", {_fmt_volume(store_vol)}" if store_vol is not None else ""
             lines.append(
-                f"• {display_name(s['store']) or '?'} — {s['total_spent']:.2f} PLN "
+                f"• {display_name(s['store']) or '?'} — {format_number(s['total_spent'])} PLN "
                 + "(" + _("{qty} pcs").format(qty=_fmt_qty(s["total_qty"])) + vol_str + ")"
             )
     if detail["history"]:
@@ -163,7 +163,7 @@ def _build_product_detail_text(
         for h in detail["history"]:
             lines.append(
                 f"  — {format_date(h['date'])} — {display_name(h['store']) or '?'} — "
-                + _("{qty}pcs").format(qty=_fmt_qty(h["qty"])) + f" — {h['total']:.2f} PLN"
+                + _("{qty}pcs").format(qty=_fmt_qty(h["qty"])) + f" — {format_number(h['total'])} PLN"
             )
     return "\n".join(lines)
 
@@ -180,11 +180,11 @@ async def _append_currency_breakdown(text: str, session: AsyncSession, user_id: 
     for r in rows:
         ccy = r["currency"]
         flag = currency_flag(ccy)
-        original = f"{r['total_original']:,.2f}".replace(",", " ")
+        original = format_number(r['total_original'])
         if ccy == "PLN":
             lines.append(f"{flag} PLN — {original} " + _("(home currency)"))
         else:
-            pln = f"{r['total_pln']:,.2f}".replace(",", " ")
+            pln = format_number(r['total_pln'])
             lines.append(f"{flag} {ccy} — {original} (≈{pln} PLN)")
     return "\n".join(lines)
 
@@ -332,7 +332,7 @@ async def _show_products_list(
         vol = p.get("total_volume_ml")
         vol_str = f" · {_fmt_volume(vol)}" if vol else ""
         lines.append(
-            f"{i}. {display} — {p['total_spent']:.2f} PLN "
+            f"{i}. {display} — {format_number(p['total_spent'])} PLN "
             + "(" + _("{qty} pcs").format(qty=_fmt_qty(p["total_qty"])) + f"{vol_str}, {stores_str})"
         )
 
@@ -507,7 +507,7 @@ async def _show_stores_list(
     for i, s in enumerate(stores, 1):
         v = s["visits"]
         visits = ngettext("{n} receipt", "{n} receipts", v).format(n=v)
-        lines.append(f"{i}. {display_name(s['store'])} — {s['total_pln']:.2f} PLN ({visits})")
+        lines.append(f"{i}. {display_name(s['store'])} — {format_number(s['total_pln'])} PLN ({visits})")
 
     await call.message.edit_text(
         "\n".join(lines),
@@ -546,7 +546,7 @@ async def store_detail_callback(
     else:
         for p in products:
             display = (p["normalized_name"] or "?").title()
-            lines.append(f"  • {display} — {p['total_spent']:.2f} PLN ("
+            lines.append(f"  • {display} — {format_number(p['total_spent'])} PLN ("
                          + _("{qty} pcs").format(qty=_fmt_qty(p["total_qty"])) + ")")
 
     await call.message.edit_text(

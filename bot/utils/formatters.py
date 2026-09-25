@@ -2,6 +2,7 @@ from datetime import date, datetime
 from typing import Optional
 
 from babel.dates import format_date as _babel_format_date
+from babel.numbers import format_decimal as _babel_format_decimal
 
 from bot.categories import category_label
 from bot.i18n import _, current_language
@@ -61,9 +62,16 @@ def format_date_str(date_str: str | None) -> str:
     return format_day_month_year(d)
 
 
+def format_number(amount: float, decimals: int = 2) -> str:
+    """Locale-aware grouping and decimal separator (e.g. '1 234,50' in ru/pl,
+    '1,234.50' in en) for a plain number, no currency symbol."""
+    pattern = "#,##0" + ("." + "0" * decimals if decimals else "")
+    return _babel_format_decimal(amount, format=pattern, locale=current_language())
+
+
 def format_currency(amount: float, currency: str) -> str:
     symbol = CURRENCY_SYMBOLS.get(currency, currency)
-    return f"{amount:.2f} {symbol}"
+    return f"{format_number(amount)} {symbol}"
 
 
 def currency_flag(currency: str) -> str:
@@ -109,7 +117,7 @@ def format_amount(amount: float, currency: str = "PLN") -> str:
 
 
 def format_pln(amount: float) -> str:
-    return f"{amount:.2f} zł"
+    return f"{format_number(amount)} zł"
 
 
 def format_date(d: Optional[date | datetime | str]) -> str:

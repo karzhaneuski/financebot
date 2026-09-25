@@ -113,11 +113,11 @@ async def test_recat_message_matches_save_message_for_foreign_currency(db_sessio
     assert recat_text is not None
     recat_amount = _amount_line(recat_text)
 
-    # The regression: recat used to print "13.04 PLN" here.
+    # The regression: recat used to print "13,04 PLN" here.
     assert recat_amount == save_amount
-    assert "13.04 PLN" not in recat_text
+    assert "13,04 PLN" not in recat_text
     assert "€" in recat_amount
-    assert f"{round(13.04 * EUR_RATE, 2):.2f} zł" in recat_amount
+    assert f"{round(13.04 * EUR_RATE, 2):.2f} zł".replace(".", ",") in recat_amount
 
 
 @pytest.mark.asyncio
@@ -151,7 +151,7 @@ async def test_receipt_photo_amount_matches_recat_amount(db_session):
 
     save_text = message.status.text
     total_line = next(l for l in save_text.splitlines() if l.startswith("💰 Итого:"))
-    expected = f"13.04 € (≈ {round(13.04 * EUR_RATE, 2):.2f} zł)"
+    expected = f"13.04 € (≈ {round(13.04 * EUR_RATE, 2):.2f} zł)".replace(".", ",")
     assert total_line == f"💰 Итого: {expected}"
 
     receipt = await get_receipt_by_id(db_session, 1)
@@ -172,7 +172,7 @@ async def test_recat_message_for_pln_receipt_has_no_conversion_suffix(db_session
     await recat_set_callback(call, session=db_session)
 
     amount = _amount_line(call.message.text)
-    assert amount == "🏪 Zabka — 25.50 zł"
+    assert amount == "🏪 Zabka — 25,50 zł"
     assert "≈" not in amount
 
 
@@ -209,7 +209,7 @@ async def test_receipt_photo_items_use_receipt_currency(db_session):
     text = message.status.text
     item_lines = [line for line in text.splitlines() if line.startswith("  • ")]
 
-    assert item_lines == ["  • Kaffee — 13.04 €", "  • Brot × 2 — 7.00 €"]
+    assert item_lines == ["  • Kaffee — 13,04 €", "  • Brot × 2 — 7,00 €"]
     assert "PLN" not in text
 
 
@@ -220,13 +220,13 @@ def test_format_items_list_uses_given_currency():
     ]
 
     assert format_items_list(items, "EUR") == (
-        "  • Kaffee — 13.04 €\n  • Brot × 2 — 7.00 €"
+        "  • Kaffee — 13,04 €\n  • Brot × 2 — 7,00 €"
     )
     assert format_items_list(items, "PLN") == (
-        "  • Kaffee — 13.04 zł\n  • Brot × 2 — 7.00 zł"
+        "  • Kaffee — 13,04 zł\n  • Brot × 2 — 7,00 zł"
     )
     # Unknown codes fall back to the bare code rather than a wrong symbol.
-    assert "13.04 HUF" in format_items_list(items, "HUF")
+    assert "13,04 HUF" in format_items_list(items, "HUF")
 
 
 def test_format_receipt_amount_shapes():
@@ -234,6 +234,6 @@ def test_format_receipt_amount_shapes():
     eur = SimpleNamespace(currency="EUR", total=13.04, total_pln=56.33)
     byn = SimpleNamespace(currency="BYN", total=13.35, total_pln=17.72)
 
-    assert format_receipt_amount(pln) == "25.50 zł"
-    assert format_receipt_amount(eur) == "13.04 € (≈ 56.33 zł)"
-    assert format_receipt_amount(byn) == "13.35 Br (≈ 17.72 zł)"
+    assert format_receipt_amount(pln) == "25,50 zł"
+    assert format_receipt_amount(eur) == "13,04 € (≈ 56,33 zł)"
+    assert format_receipt_amount(byn) == "13,35 Br (≈ 17,72 zł)"

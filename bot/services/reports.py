@@ -8,7 +8,7 @@ from bot.services.forecast import format_forecast_line, get_month_forecast
 from bot.categories import category_label
 from bot.i18n import _
 from bot.markers import display_name
-from bot.utils.formatters import format_day_month, format_day_month_year, format_month_year
+from bot.utils.formatters import format_day_month, format_day_month_year, format_month_year, format_number
 
 CATEGORY_EMOJI = {
     "groceries": "🛒",
@@ -34,7 +34,7 @@ def _progress_bar(current: float, limit: float, width: int = 10) -> str:
 
 
 def _fmt(amount: float) -> str:
-    return f"{amount:,.2f}".replace(",", " ")
+    return format_number(amount)
 
 
 def _receipt_primary_emoji(receipt) -> str:
