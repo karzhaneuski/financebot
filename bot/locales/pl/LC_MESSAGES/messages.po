@@ -12,8 +12,7 @@ msgstr ""
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
 "Language-Team: pl <LL@li.org>\n"
-"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && "
-"(n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -21,761 +20,758 @@ msgstr ""
 
 #, python-brace-format
 msgid "  — expenses: {count} pcs. totalling *{amount} PLN*"
-msgstr ""
+msgstr "  — wydatki: {count} szt. na łączną kwotę *{amount} PLN*"
 
 #, python-brace-format
 msgid "  — income: {count} pcs. totalling *{amount} PLN*"
-msgstr ""
+msgstr "  — przychody: {count} szt. na łączną kwotę *{amount} PLN*"
 
 msgid "(home currency)"
-msgstr ""
+msgstr "(waluta domowa)"
 
 #, python-brace-format
 msgid "(showing the first {n} matches)"
-msgstr ""
+msgstr "(pokazano pierwsze {n} dopasowań)"
 
 #, python-brace-format
 msgid "*All time:* {amount} PLN, {qty} pcs"
-msgstr ""
+msgstr "*Cały czas:* {amount} PLN, {qty} szt"
 
 msgid "*By currency:*"
-msgstr ""
+msgstr "*Według waluty:*"
 
 msgid "*By store:*"
-msgstr ""
+msgstr "*Według sklepu:*"
 
 msgid "*Last 5 expenses:*"
-msgstr ""
+msgstr "*Ostatnie 5 wydatków:*"
 
 msgid "*Latest purchases:*"
-msgstr ""
+msgstr "*Ostatnie zakupy:*"
 
 msgid "*Purchase history:*"
-msgstr ""
+msgstr "*Historia zakupów:*"
 
 #, python-brace-format
 msgid "... and {n} more item"
 msgid_plural "... and {n} more items"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "... i jeszcze {n} pozycja"
+msgstr[1] "... i jeszcze {n} pozycje"
+msgstr[2] "... i jeszcze {n} pozycji"
 
 msgid "Add an expense manually"
-msgstr ""
+msgstr "Dodaj wydatek ręcznie"
 
 msgid "Akademik"
-msgstr ""
+msgstr "Akademik"
 
 msgid "All time"
-msgstr ""
+msgstr "Cały czas"
 
 msgid "Apr"
-msgstr ""
+msgstr "kwi"
 
 msgid "Aug"
-msgstr ""
+msgstr "sie"
 
 #, python-brace-format
 msgid "Bought: *{qty} pcs*"
-msgstr ""
+msgstr "Kupiono: *{qty} szt*"
 
 msgid "Budget deleted"
-msgstr ""
+msgstr "Budżet usunięty"
 
 msgid "Budget not found."
-msgstr ""
+msgstr "Budżet nie znaleziony."
 
 msgid "Budgets by category"
-msgstr ""
+msgstr "Budżety według kategorii"
 
 msgid "By category:"
-msgstr ""
+msgstr "Według kategorii:"
 
 msgid "Cafés/Restaurants"
-msgstr ""
+msgstr "Kawiarnie/Restauracje"
 
 msgid "Cancel the current action"
-msgstr ""
+msgstr "Anuluj bieżącą operację"
 
 msgid "Cancelled."
-msgstr ""
+msgstr "Anulowano."
 
 msgid "Card payment abroad"
-msgstr ""
+msgstr "Płatność kartą za granicą"
 
 msgid "Cash deposit"
-msgstr ""
+msgstr "Wpłata gotówki"
 
 msgid "Cash withdrawal"
-msgstr ""
+msgstr "Wypłata gotówki"
 
 msgid "Category"
-msgstr ""
+msgstr "Kategoria"
 
 msgid "Change language"
-msgstr ""
+msgstr "Zmień język"
 
 #, python-brace-format
 msgid "Chart for {period}"
-msgstr ""
+msgstr "Wykres za {period}"
 
 msgid "Choose a category:"
-msgstr ""
+msgstr "Wybierz kategorię:"
 
 msgid "Choose the receipt you want to split:"
-msgstr ""
+msgstr "Wybierz paragon, który chcesz podzielić:"
 
 msgid "Clothing"
-msgstr ""
+msgstr "Odzież"
 
 msgid "Currency"
-msgstr ""
+msgstr "Waluta"
 
 msgid "Custom dates"
-msgstr ""
+msgstr "Podaj daty"
 
 msgid "Daily (02:00)"
-msgstr ""
+msgstr "Codziennie (02:00)"
 
 #, python-brace-format
 msgid "Daily spending — {period}"
-msgstr ""
+msgstr "Wydatki dzienne — {period}"
 
 msgid "Date"
-msgstr ""
+msgstr "Data"
 
 msgid "Day"
-msgstr ""
+msgstr "Dzień"
 
 msgid "Dec"
-msgstr ""
+msgstr "gru"
 
 #, python-brace-format
 msgid "Delete the *{category}* budget ({limit}/month)?"
-msgstr ""
+msgstr "Usunąć budżet *{category}* ({limit}/mies.)?"
 
 #, python-brace-format
 msgid "Difference: {diff} PLN"
-msgstr ""
+msgstr "Różnica: {diff} PLN"
 
 msgid "Dormitory"
-msgstr ""
+msgstr "Akademik"
 
 msgid "Eating out"
-msgstr ""
+msgstr "Jedzenie na mieście"
 
 msgid "Electronics"
-msgstr ""
+msgstr "Elektronika"
 
 msgid "Enter a non-empty name:"
-msgstr ""
+msgstr "Podaj niepustą nazwę:"
 
 msgid "Enter the date as *DD.MM.YYYY* or `/skip` for today:"
-msgstr ""
+msgstr "Podaj datę w formacie *DD.MM.RRRR* lub `/skip` dla dzisiaj:"
 
 #, python-brace-format
 msgid "Enter the limit for *{category}* in złoty (PLN):"
-msgstr ""
+msgstr "Podaj limit dla *{category}* w złotych (PLN):"
 
 #, python-brace-format
 msgid "Enter the monthly limit for *{category}* (PLN):"
-msgstr ""
+msgstr "Podaj miesięczny limit dla kategorii *{category}* (PLN):"
 
 msgid "Enter the store or place name (or `/skip` to skip):"
-msgstr ""
+msgstr "Podaj nazwę sklepu lub miejsca (lub `/skip`, aby pominąć):"
 
 msgid "Entertainment"
-msgstr ""
+msgstr "Rozrywka"
 
 msgid "Expense"
-msgstr ""
+msgstr "Wydatek"
 
 msgid "Expenses:"
-msgstr ""
+msgstr "Wydatki:"
 
 msgid "Export data"
-msgstr ""
+msgstr "Eksportuj dane"
 
 msgid "FAVOURITE CATEGORY"
-msgstr ""
+msgstr "ULUBIONA KATEGORIA"
 
 msgid "Feb"
-msgstr ""
+msgstr "lut"
 
 msgid "FinanceBot · your personal year in numbers"
-msgstr ""
+msgstr "FinanceBot · Twój rok w liczbach"
 
 #, python-brace-format
 msgid "Found {n} match for “{query}”. Choose a product:"
 msgid_plural "Found {n} matches for “{query}”. Choose a product:"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Znaleziono {n} dopasowanie dla „{query}”. Wybierz produkt:"
+msgstr[1] "Znaleziono {n} dopasowania dla „{query}”. Wybierz produkt:"
+msgstr[2] "Znaleziono {n} dopasowań dla „{query}”. Wybierz produkt:"
 
 msgid "Groceries"
-msgstr ""
+msgstr "Produkty spożywcze"
 
 msgid "Health"
-msgstr ""
+msgstr "Zdrowie"
 
 msgid "Household"
-msgstr ""
+msgstr "Dom"
 
 msgid "Housing"
-msgstr ""
+msgstr "Mieszkanie"
 
 msgid "Item"
-msgstr ""
+msgstr "Pozycja"
 
 msgid "Items"
-msgstr ""
+msgstr "Pozycje"
 
 msgid "Jan"
-msgstr ""
+msgstr "sty"
 
 msgid "Jul"
-msgstr ""
+msgstr "lip"
 
 msgid "Jun"
-msgstr ""
+msgstr "cze"
 
 msgid "Last month"
-msgstr ""
+msgstr "Za miesiąc"
 
 msgid "Last week"
-msgstr ""
+msgstr "Za tydzień"
 
 msgid "Last year"
-msgstr ""
+msgstr "Za rok"
 
 msgid "List of commands"
-msgstr ""
+msgstr "Lista poleceń"
 
 msgid "MOST EXPENSIVE RECEIPT"
-msgstr ""
+msgstr "NAJDROŻSZY PARAGON"
 
 msgid "Mar"
-msgstr ""
+msgstr "mar"
 
 #, python-brace-format
 msgid ""
-"Mark what was bought *for you* (receipt of {total} {currency} ≈ "
-"{total_pln} PLN):\n"
+"Mark what was bought *for you* (receipt of {total} {currency} ≈ {total_pln} PLN):\n"
 "\n"
 "Yours right now: *{personal} PLN*"
 msgstr ""
+"Zaznacz, co kupiono *dla Ciebie* (paragon na {total} {currency} ≈ {total_pln} PLN):\n"
+"\n"
+"Twoje obecnie: *{personal} PLN*"
 
 msgid "May"
-msgstr ""
+msgstr "maj"
 
 msgid "Month"
-msgstr ""
+msgstr "Miesiąc"
 
 msgid "Monthly (1st, 02:00)"
-msgstr ""
+msgstr "Miesięcznie (1. dnia, 02:00)"
 
 #, python-brace-format
 msgid "Most visited store: {store} — {visits}, {amount} PLN"
-msgstr ""
+msgstr "Najczęściej odwiedzany sklep: {store} — {visits}, {amount} PLN"
 
 #, python-brace-format
 msgid "Next charge: {date}"
-msgstr ""
+msgstr "Następne obciążenie: {date}"
 
 msgid "No budgets set. Use /budget to add one."
-msgstr ""
+msgstr "Nie ustawiono żadnych budżetów. Użyj /budget, aby dodać."
 
 msgid "No categories yet"
-msgstr ""
+msgstr "Brak kategorii"
 
 msgid "No items found."
-msgstr ""
+msgstr "Nie znaleziono pozycji."
 
 msgid "No name"
-msgstr ""
+msgstr "Bez nazwy"
 
 #, python-brace-format
 msgid "No products found for “{period}”."
-msgstr ""
+msgstr "Nie znaleziono produktów dla „{period}”."
 
 msgid "No products found."
-msgstr ""
+msgstr "Nie znaleziono produktów."
 
 msgid "No purchases in this period."
-msgstr ""
+msgstr "Brak zakupów w tym okresie."
 
 msgid "No receipts yet — nothing to split 🙂"
-msgstr ""
+msgstr "Nie ma jeszcze żadnych paragonów — nie ma czego dzielić 🙂"
 
 msgid "No spending found for this period 🙂"
-msgstr ""
+msgstr "Nie znaleziono wydatków w tym okresie 🙂"
 
 #, python-brace-format
 msgid "No spending found for “{period}” 🙂"
-msgstr ""
+msgstr "Nie znaleziono wydatków dla „{period}” 🙂"
 
 msgid "No spending this month 🎉"
-msgstr ""
+msgstr "W tym miesiącu nie było wydatków 🎉"
 
 msgid "No spending this week 🎉"
-msgstr ""
+msgstr "W tym tygodniu nie było wydatków 🎉"
 
-msgid ""
-"No spending this year yet 🤷 Add receipts — and get your summary at the "
-"end of the year!"
-msgstr ""
+msgid "No spending this year yet 🤷 Add receipts — and get your summary at the end of the year!"
+msgstr "W tym roku nie ma jeszcze wydatków 🤷 Dodawaj paragony — a na koniec roku otrzymasz podsumowanie!"
 
 msgid "No spending yesterday 🎉"
-msgstr ""
+msgstr "Wczoraj nie było wydatków 🎉"
 
 msgid "No store data for this period."
-msgstr ""
+msgstr "Brak danych o sklepach w tym okresie."
 
 #, python-brace-format
 msgid "No stores found for “{period}”."
-msgstr ""
+msgstr "Nie znaleziono sklepów dla „{period}”."
 
 msgid "No stores yet"
-msgstr ""
+msgstr "Brak sklepów"
 
 msgid "No subscriptions found yet."
-msgstr ""
+msgstr "Nie znaleziono jeszcze żadnych subskrypcji."
 
 msgid "Not enough data for a daily chart."
-msgstr ""
+msgstr "Za mało danych na wykres dzienny."
 
 msgid "Nothing found for this query 🤷"
-msgstr ""
+msgstr "Nic nie znaleziono dla tego zapytania 🤷"
 
 #, python-brace-format
 msgid "Nothing found for “{query}”. Try another name."
-msgstr ""
+msgstr "Nic nie znaleziono dla „{query}”. Spróbuj innej nazwy."
 
 msgid "Nothing to cancel."
-msgstr ""
+msgstr "Nie ma nic do anulowania."
 
 msgid "Nov"
-msgstr ""
+msgstr "lis"
 
 msgid "Oct"
-msgstr ""
+msgstr "paź"
 
 msgid "Online shopping"
-msgstr ""
+msgstr "Zakupy online"
 
 msgid "Other"
-msgstr ""
+msgstr "Inne"
 
 #, python-brace-format
 msgid "Over by: {amount} PLN"
-msgstr ""
+msgstr "Przekroczono o: {amount} PLN"
 
 msgid "Pharmacy"
-msgstr ""
+msgstr "Apteka"
 
 msgid "Price"
-msgstr ""
+msgstr "Cena"
 
 msgid "Qty"
-msgstr ""
+msgstr "Ilość"
 
 msgid "Receipts"
-msgstr ""
+msgstr "Paragony"
 
 msgid "Recurring subscriptions"
-msgstr ""
+msgstr "Cykliczne subskrypcje"
 
 #, python-brace-format
 msgid "Remaining: {amount} PLN"
-msgstr ""
+msgstr "Pozostało: {amount} PLN"
 
 msgid "Scheduled report settings"
-msgstr ""
+msgstr "Ustawienia raportów cyklicznych"
 
 msgid "Scholarship"
-msgstr ""
+msgstr "Stypendium"
 
 msgid "Search transactions in plain text"
-msgstr ""
+msgstr "Szukaj transakcji zwykłym tekstem"
 
 msgid "Sep"
-msgstr ""
+msgstr "wrz"
 
 msgid "Share the picture with your year stats 😉"
-msgstr ""
+msgstr "Podziel się obrazkiem ze statystykami roku 😉"
 
 msgid "Spending by month"
-msgstr ""
+msgstr "Wydatki według miesięcy"
 
 #, python-brace-format
 msgid "Spending chart for {period}"
-msgstr ""
+msgstr "Wykres wydatków za {period}"
 
 #, python-brace-format
 msgid "Spending for {period}"
-msgstr ""
+msgstr "Wydatki za {period}"
 
 msgid "Spending statistics"
-msgstr ""
+msgstr "Statystyki wydatków"
 
 #, python-brace-format
 msgid "Spending — {period}"
-msgstr ""
+msgstr "Wydatki — {period}"
 
 #, python-brace-format
 msgid "Spent this month: {amount} PLN ({pct})"
-msgstr ""
+msgstr "Wydano w tym miesiącu: {amount} PLN ({pct})"
 
 msgid "Split a receipt with other people"
-msgstr ""
+msgstr "Podziel paragon z innymi osobami"
 
 msgid "Start and short intro"
-msgstr ""
+msgstr "Start i krótkie wprowadzenie"
 
 msgid "Store"
-msgstr ""
+msgstr "Sklep"
 
 msgid "Subscriptions"
-msgstr ""
+msgstr "Subskrypcje"
 
 msgid "TOP 3 PRODUCTS OF THE YEAR"
-msgstr ""
+msgstr "TOP 3 PRODUKTY ROKU"
 
 msgid "Tap the button to save all transactions to the database:"
-msgstr ""
+msgstr "Naciśnij przycisk, aby zapisać wszystkie transakcje w bazie danych:"
 
 msgid "They were not added again."
-msgstr ""
+msgstr "Nie zostały dodane ponownie."
 
 msgid "This month"
-msgstr ""
+msgstr "Ten miesiąc"
 
 msgid "This receipt has no items — it can't be split."
-msgstr ""
+msgstr "Ten paragon nie ma pozycji — nie można go podzielić."
 
 msgid "This receipt's total is zero — splitting makes no sense."
-msgstr ""
+msgstr "Suma tego paragonu wynosi zero — podział nie ma sensu."
 
 msgid "This week"
-msgstr ""
+msgstr "Ten tydzień"
 
 msgid "This year"
-msgstr ""
+msgstr "Ten rok"
 
 msgid "Today"
-msgstr ""
+msgstr "Dzisiaj"
 
 #, python-brace-format
 msgid "Top stores — {period}"
-msgstr ""
+msgstr "Najlepsze sklepy — {period}"
 
 msgid "Total"
-msgstr ""
+msgstr "Razem"
 
 msgid "Total PLN"
-msgstr ""
+msgstr "Razem PLN"
 
 #, python-brace-format
 msgid "Total per month: ~{amount} PLN"
-msgstr ""
+msgstr "Razem miesięcznie: ~{amount} PLN"
 
 #, python-brace-format
 msgid "Total spent: *{amount} PLN*"
-msgstr ""
+msgstr "Razem wydano: *{amount} PLN*"
 
 #, python-brace-format
 msgid "Total: {transactions}, sum {amount} PLN"
-msgstr ""
+msgstr "Razem: {transactions}, suma {amount} PLN"
 
 msgid "Transfer"
-msgstr ""
+msgstr "Przelew"
 
 msgid "Transfer to Revolut"
-msgstr ""
+msgstr "Przelew na Revolut"
 
 msgid "Transport"
-msgstr ""
+msgstr "Transport"
 
 msgid "Turn off"
-msgstr ""
+msgstr "Wyłącz"
 
 msgid "Turn on"
-msgstr ""
+msgstr "Włącz"
 
 msgid "Unknown store"
-msgstr ""
+msgstr "Nieznany sklep"
 
 msgid "Use /stats to see your statistics."
-msgstr ""
+msgstr "Użyj /stats, aby zobaczyć statystyki."
 
 msgid "Week"
-msgstr ""
+msgstr "Tydzień"
 
 msgid "Weekly (Mon 02:00)"
-msgstr ""
+msgstr "Co tydzień (pon. 02:00)"
 
-msgid ""
-"What should I look for? For example: 'Kaufland expenses in June' or "
-"'purchases over 200 złoty in May'"
-msgstr ""
+msgid "What should I look for? For example: 'Kaufland expenses in June' or 'purchases over 200 złoty in May'"
+msgstr "Czego mam szukać? Na przykład: 'wydatki w Kaufland w czerwcu' albo 'zakupy powyżej 200 złotych w maju'"
 
 #, python-brace-format
 msgid "YEAR IN REVIEW {year}"
-msgstr ""
+msgstr "ROK W PIGUŁCE {year}"
 
 msgid "Year"
-msgstr ""
+msgstr "Rok"
 
 msgid "Year in review"
-msgstr ""
+msgstr "Podsumowanie roku"
 
 #, python-brace-format
 msgid "bought {n} time"
 msgid_plural "bought {n} times"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "kupiono {n} raz"
+msgstr[1] "kupiono {n} razy"
+msgstr[2] "kupiono {n} razy"
 
 msgid "date unknown"
-msgstr ""
+msgstr "data nieznana"
 
 msgid "no product data"
-msgstr ""
+msgstr "brak danych o produktach"
 
 #, python-brace-format
 msgid "spent this year · {transactions}"
-msgstr ""
+msgstr "wydano w tym roku · {transactions}"
 
 msgid "the month"
-msgstr ""
+msgstr "miesiąc"
 
 msgid "the week"
-msgstr ""
+msgstr "tydzień"
 
 msgid "the year"
-msgstr ""
+msgstr "rok"
 
 msgid "unknown"
-msgstr ""
+msgstr "nieznane"
 
 msgid "unknown (single charge)"
-msgstr ""
+msgstr "nieznane (jednorazowe obciążenie)"
 
 #, python-brace-format
 msgid "vs last month: {diff} {arrow}  (was {amount} PLN)"
-msgstr ""
+msgstr "vs poprzedni miesiąc: {diff} {arrow}  (było {amount} PLN)"
 
 #, python-brace-format
 msgid "vs last week: {diff} {arrow}  (was {amount} PLN)"
-msgstr ""
+msgstr "vs poprzedni tydzień: {diff} {arrow}  (było {amount} PLN)"
 
 #, python-brace-format
 msgid "{amount} PLN/mo"
-msgstr ""
+msgstr "{amount} PLN/mies."
 
 #, python-brace-format
 msgid "{amount} PLN/month"
-msgstr ""
+msgstr "{amount} PLN/miesiąc"
 
 #, python-brace-format
 msgid "{bought}, spent {amount} PLN"
-msgstr ""
+msgstr "{bought}, wydano {amount} PLN"
 
 #, python-brace-format
 msgid "{n} budget"
 msgid_plural "{n} budgets"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "{n} budżet"
+msgstr[1] "{n} budżety"
+msgstr[2] "{n} budżetów"
 
 #, python-brace-format
 msgid "{n} day"
 msgid_plural "{n} days"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "{n} dzień"
+msgstr[1] "{n} dni"
+msgstr[2] "{n} dni"
 
 #, python-brace-format
 msgid "{n} item"
 msgid_plural "{n} items"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "{n} pozycja"
+msgstr[1] "{n} pozycje"
+msgstr[2] "{n} pozycji"
 
 #, python-brace-format
 msgid "{n} receipt"
 msgid_plural "{n} receipts"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "{n} paragon"
+msgstr[1] "{n} paragony"
+msgstr[2] "{n} paragonów"
 
 #, python-brace-format
 msgid "{n} store"
 msgid_plural "{n} stores"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "{n} skl."
+msgstr[1] "{n} skl."
+msgstr[2] "{n} skl."
 
 #, python-brace-format
 msgid "{n} transaction"
 msgid_plural "{n} transactions"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "{n} transakcja"
+msgstr[1] "{n} transakcje"
+msgstr[2] "{n} transakcji"
 
 #, python-brace-format
 msgid "{n} visit"
 msgid_plural "{n} visits"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "{n} wizyta"
+msgstr[1] "{n} wizyty"
+msgstr[2] "{n} wizyt"
 
 #, python-brace-format
 msgid "{pct} of all spending"
-msgstr ""
+msgstr "{pct} wszystkich wydatków"
 
 #, python-brace-format
 msgid "{qty} pcs"
-msgstr ""
+msgstr "{qty} szt"
 
 #, python-brace-format
 msgid "{qty}pcs"
-msgstr ""
+msgstr "{qty}szt"
 
 #, python-brace-format
 msgid "{year} — thanks for tracking with FinanceBot"
-msgstr ""
+msgstr "{year} — dziękujemy za korzystanie z FinanceBot"
 
 msgid "⏳ Building statistics..."
-msgstr ""
+msgstr "⏳ Tworzę statystyki..."
 
 msgid "⏳ Building the CSV..."
-msgstr ""
+msgstr "⏳ Tworzę plik CSV..."
 
 msgid "⏳ Building the comparison..."
-msgstr ""
+msgstr "⏳ Tworzę porównanie..."
 
 msgid "⏳ Converting the PDF to an image..."
-msgstr ""
+msgstr "⏳ Konwertuję PDF na obraz..."
 
 msgid "⏳ Downloading the file..."
-msgstr ""
+msgstr "⏳ Pobieram plik..."
 
 msgid "⏳ Parsing the Erste Bank Polska statement..."
-msgstr ""
+msgstr "⏳ Analizuję wyciąg Erste Bank Polska..."
 
 msgid "⏳ Parsing the Revolut statement..."
-msgstr ""
+msgstr "⏳ Analizuję wyciąg Revolut..."
 
 msgid "⏳ Processing the receipt..."
-msgstr ""
+msgstr "⏳ Przetwarzam paragon..."
 
-msgid ""
-"⏳ Receipt recognition is temporarily unavailable. You can add the expense"
-" manually with /add or upload a bank statement (Erste PDF or Revolut "
-"CSV)."
-msgstr ""
+msgid "⏳ Receipt recognition is temporarily unavailable. You can add the expense manually with /add or upload a bank statement (Erste PDF or Revolut CSV)."
+msgstr "⏳ Rozpoznawanie paragonów jest tymczasowo niedostępne. Możesz dodać wydatek ręcznie poleceniem /add lub przesłać wyciąg bankowy (Erste PDF lub Revolut CSV)."
 
 msgid "⏳ Saving transactions..."
-msgstr ""
+msgstr "⏳ Zapisuję transakcje..."
 
 msgid "▶ Next"
-msgstr ""
+msgstr "▶ Dalej"
 
 msgid "◀ Back"
-msgstr ""
+msgstr "◀ Wstecz"
 
 msgid "⚙️ *Report settings:*"
-msgstr ""
+msgstr "⚙️ *Ustawienia raportów:*"
 
 #, python-brace-format
 msgid "⚠️ '{category}' budget {pct} used ({spent} / {limit} PLN)"
-msgstr ""
+msgstr "⚠️ Budżet '{category}' wykorzystany w {pct} ({spent} / {limit} PLN)"
 
 #, python-brace-format
 msgid ""
 "⚠️ *Unusual expense*\n"
-"{amount} PLN at {store} — that's {multiplier}× the average receipt in the"
-" “{category}” category (usually ~{average} PLN)"
+"{amount} PLN at {store} — that's {multiplier}× the average receipt in the “{category}” category (usually ~{average} PLN)"
 msgstr ""
+"⚠️ *Nietypowy wydatek*\n"
+"{amount} PLN w {store} — to {multiplier}× więcej niż średni paragon w kategorii „{category}” (zwykle ~{average} PLN)"
 
 #, python-brace-format
 msgid ""
 "⚠️ *{category} budget: {pct} spent!*\n"
 "{spent} / {limit} PLN — {remaining} PLN left"
 msgstr ""
+"⚠️ *Budżet {category}: wydano {pct}!*\n"
+"{spent} / {limit} PLN — pozostało {remaining} PLN"
 
 msgid "⚠️ Couldn't build the comparison. Please try later."
-msgstr ""
+msgstr "⚠️ Nie udało się utworzyć porównania. Spróbuj później."
 
 #, python-brace-format
-msgid ""
-"⚠️ Found {n} possible duplicate — this transaction was already added "
-"manually:"
-msgid_plural ""
-"⚠️ Found {n} possible duplicates — these transactions were already added "
-"manually:"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgid "⚠️ Found {n} possible duplicate — this transaction was already added manually:"
+msgid_plural "⚠️ Found {n} possible duplicates — these transactions were already added manually:"
+msgstr[0] "⚠️ Znaleziono {n} możliwy duplikat — ta transakcja została już dodana ręcznie:"
+msgstr[1] "⚠️ Znaleziono {n} możliwe duplikaty — te transakcje zostały już dodane ręcznie:"
+msgstr[2] "⚠️ Znaleziono {n} możliwych duplikatów — te transakcje zostały już dodane ręcznie:"
 
 msgid "⚠️ Index error."
-msgstr ""
+msgstr "⚠️ Błąd indeksu."
 
 msgid "⚠️ No transactions found. The export format may have changed."
-msgstr ""
+msgstr "⚠️ Nie znaleziono transakcji. Format eksportu mógł się zmienić."
 
 msgid "⚠️ No transactions found. The statement format may have changed."
-msgstr ""
+msgstr "⚠️ Nie znaleziono transakcji. Format wyciągu mógł się zmienić."
 
 msgid "⚠️ Product not found."
-msgstr ""
+msgstr "⚠️ Produkt nie znaleziony."
 
 msgid "⚠️ Receipt not found."
-msgstr ""
+msgstr "⚠️ Paragon nie znaleziony."
 
 msgid "⚠️ Store not found."
-msgstr ""
+msgstr "⚠️ Sklep nie znaleziony."
 
 msgid "⚠️ The receipt total doesn't match the sum of the items."
-msgstr ""
+msgstr "⚠️ Suma paragonu nie zgadza się z sumą pozycji."
 
 msgid "⚠️ The search session has expired. Run /search again."
-msgstr ""
+msgstr "⚠️ Sesja wyszukiwania wygasła. Uruchom /search ponownie."
 
 msgid "⚠️ The search used simplified rules — results may be inaccurate."
-msgstr ""
+msgstr "⚠️ Wyszukiwanie wykonano według uproszczonych reguł — wyniki mogą być niedokładne."
 
 msgid "⚠️ The session has expired. Open the list again."
-msgstr ""
+msgstr "⚠️ Sesja wygasła. Otwórz listę ponownie."
 
 msgid "⚠️ The session has expired. Run /split again."
-msgstr ""
+msgstr "⚠️ Sesja wygasła. Uruchom /split ponownie."
 
 msgid "⚠️ The session has expired. Run the search again."
-msgstr ""
+msgstr "⚠️ Sesja wygasła. Uruchom wyszukiwanie ponownie."
 
 msgid ""
 "⚠️ This will delete ALL your data: transactions, receipts, settings.\n"
 "\n"
 "Send `/reset confirm` to confirm."
 msgstr ""
+"⚠️ To usunie WSZYSTKIE Twoje dane: transakcje, paragony, ustawienia.\n"
+"\n"
+"Wyślij `/reset confirm`, aby potwierdzić."
 
 msgid "✅ *Budget set!*"
-msgstr ""
+msgstr "✅ *Budżet ustawiony!*"
 
 msgid "✅ *Receipt from PDF saved!*"
-msgstr ""
+msgstr "✅ *Paragon z PDF zapisany!*"
 
 msgid "✅ *Receipt saved!*"
-msgstr ""
+msgstr "✅ *Paragon zapisany!*"
 
 #, python-brace-format
 msgid "✅ *Saved {n} transaction!*"
 msgid_plural "✅ *Saved {n} transactions!*"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "✅ *Zapisano {n} transakcję!*"
+msgstr[1] "✅ *Zapisano {n} transakcje!*"
+msgstr[2] "✅ *Zapisano {n} transakcji!*"
 
 #, python-brace-format
 msgid ""
@@ -783,118 +779,118 @@ msgid ""
 "\n"
 "_Deleted: {receipts}, {items}, {budgets}._"
 msgstr ""
+"✅ Wszystkie dane usunięte. Możesz zacząć od nowa — prześlij wyciąg.\n"
+"\n"
+"_Usunięto: {receipts}, {items}, {budgets}._"
 
 #, python-brace-format
 msgid "✅ Category updated: {category}"
-msgstr ""
+msgstr "✅ Kategoria zaktualizowana: {category}"
 
 msgid "✅ Done"
-msgstr ""
+msgstr "✅ Gotowe"
 
 #, python-brace-format
 msgid "✅ Expense saved: *{amount}* (no store)"
-msgstr ""
+msgstr "✅ Wydatek zapisany: *{amount}* (bez sklepu)"
 
 #, python-brace-format
 msgid "✅ Expense saved: *{amount}* at {store}"
-msgstr ""
+msgstr "✅ Wydatek zapisany: *{amount}* w {store}"
 
 #, python-brace-format
 msgid "✅ Export ready — {n} row"
 msgid_plural "✅ Export ready — {n} rows"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "✅ Eksport gotowy — {n} wiersz"
+msgstr[1] "✅ Eksport gotowy — {n} wiersze"
+msgstr[2] "✅ Eksport gotowy — {n} wierszy"
 
 #, python-brace-format
 msgid "✅ Language changed: {language}"
-msgstr ""
+msgstr "✅ Język zmieniony: {language}"
 
 msgid "✅ Save all transactions"
-msgstr ""
+msgstr "✅ Zapisz wszystkie transakcje"
 
 msgid "✅ Saved!"
-msgstr ""
+msgstr "✅ Zapisano!"
 
 #, python-brace-format
 msgid "✅ Saved: *{name}*"
-msgstr ""
+msgstr "✅ Zapisano: *{name}*"
 
 msgid "✅ Transaction saved!"
-msgstr ""
+msgstr "✅ Transakcja zapisana!"
 
 #, python-brace-format
 msgid "✅ Updated: statistics will now count *{new} PLN* instead of {old} PLN"
-msgstr ""
+msgstr "✅ Zaktualizowano: statystyki będą teraz uwzględniać *{new} PLN* zamiast {old} PLN"
 
 msgid "✅ Yes"
-msgstr ""
+msgstr "✅ Tak"
 
 msgid ""
 "✏️ *Adding an expense manually*\n"
 "\n"
 "Enter the amount and currency (e.g. `25.50 PLN` or `8 EUR`):"
 msgstr ""
+"✏️ *Ręczne dodawanie wydatku*\n"
+"\n"
+"Podaj kwotę i walutę (np. `25.50 PLN` lub `8 EUR`):"
 
 msgid "✏️ Change category"
-msgstr ""
+msgstr "✏️ Zmień kategorię"
 
 msgid "❌ Action cancelled."
-msgstr ""
+msgstr "❌ Operacja anulowana."
 
 msgid "❌ An unexpected error occurred. Try again or send /help"
-msgstr ""
+msgstr "❌ Wystąpił nieoczekiwany błąd. Spróbuj ponownie lub napisz /help"
 
 msgid "❌ Cancel"
-msgstr ""
+msgstr "❌ Anuluj"
 
 msgid "❌ Couldn't build the picture. Please try later."
-msgstr ""
+msgstr "❌ Nie udało się utworzyć obrazka. Spróbuj później."
 
 msgid "❌ Couldn't create the file. Please try again."
-msgstr ""
+msgstr "❌ Nie udało się utworzyć pliku. Spróbuj ponownie."
 
 msgid "❌ Couldn't download the file. Please try again."
-msgstr ""
+msgstr "❌ Nie udało się pobrać pliku. Spróbuj ponownie."
 
 msgid "❌ Couldn't download the photo. Please try again."
-msgstr ""
+msgstr "❌ Nie udało się pobrać zdjęcia. Spróbuj ponownie."
 
 msgid "❌ Couldn't parse the file. Try another export."
-msgstr ""
+msgstr "❌ Nie udało się przetworzyć pliku. Spróbuj innego eksportu."
 
 msgid "❌ Couldn't parse the statement. Try another file."
-msgstr ""
+msgstr "❌ Nie udało się przetworzyć wyciągu. Spróbuj innego pliku."
 
 msgid "❌ Couldn't read the PDF. Try another file."
-msgstr ""
+msgstr "❌ Nie udało się odczytać PDF. Spróbuj innego pliku."
 
 msgid "❌ Couldn't read the data. Upload the statement again."
-msgstr ""
+msgstr "❌ Błąd odczytu danych. Prześlij wyciąg ponownie."
 
-msgid ""
-"❌ Couldn't read the receipt in the PDF. Try sending a photo of the "
-"receipt or add the expense manually with /add"
-msgstr ""
+msgid "❌ Couldn't read the receipt in the PDF. Try sending a photo of the receipt or add the expense manually with /add"
+msgstr "❌ Nie udało się rozpoznać paragonu w PDF. Spróbuj przesłać zdjęcie paragonu lub dodaj wydatek ręcznie poleceniem /add"
 
-msgid ""
-"❌ Couldn't read the receipt. Try taking a sharper photo or add the "
-"expense manually with /add"
-msgstr ""
+msgid "❌ Couldn't read the receipt. Try taking a sharper photo or add the expense manually with /add"
+msgstr "❌ Nie udało się rozpoznać paragonu. Spróbuj zrobić wyraźniejsze zdjęcie lub dodaj wydatek ręcznie poleceniem /add"
 
-msgid ""
-"❌ Couldn't recognize the file. Supported: Erste Bank Polska statements "
-"(PDF) and Revolut consolidated statements (CSV)."
-msgstr ""
+msgid "❌ Couldn't recognize the file. Supported: Erste Bank Polska statements (PDF) and Revolut consolidated statements (CSV)."
+msgstr "❌ Nie udało się rozpoznać pliku. Obsługiwane są wyciągi Erste Bank Polska (PDF) oraz zbiorcze wyciągi Revolut (CSV)."
 
 msgid "❌ Enter a valid amount, e.g. `500` or `1500.50`"
-msgstr ""
+msgstr "❌ Podaj prawidłową kwotę, np. `500` lub `1500.50`"
 
 msgid "❌ I didn't get the format. Enter it like: `25.50 PLN`"
-msgstr ""
+msgstr "❌ Nie rozpoznałem formatu. Podaj w postaci: `25.50 PLN`"
 
 msgid "❌ Invalid date format. Enter *DD.MM.YYYY* or `/skip`:"
-msgstr ""
+msgstr "❌ Nieprawidłowy format daty. Podaj *DD.MM.RRRR* lub `/skip`:"
 
 msgid ""
 "❌ Invalid format. Enter the period as *DD.MM.YYYY-DD.MM.YYYY*\n"
@@ -902,97 +898,101 @@ msgid ""
 "\n"
 "Or /cancel to cancel."
 msgstr ""
+"❌ Nieprawidłowy format. Podaj okres jako *DD.MM.RRRR-DD.MM.RRRR*\n"
+"Na przykład: `01.05.2026-31.05.2026`\n"
+"\n"
+"Albo /cancel, aby anulować."
 
 msgid "❌ No"
-msgstr ""
+msgstr "❌ Nie"
 
 msgid "❌ Saving cancelled."
-msgstr ""
+msgstr "❌ Zapisywanie anulowane."
 
 msgid "❌ Saving failed. Please try later."
-msgstr ""
+msgstr "❌ Zapis nie powiódł się. Spróbuj później."
 
 msgid "❌ Something went wrong while processing. Please try later."
-msgstr ""
+msgstr "❌ Coś poszło nie tak podczas przetwarzania. Spróbuj później."
 
 msgid "❌ The amount must be greater than zero."
-msgstr ""
+msgstr "❌ Kwota musi być większa niż zero."
 
 msgid "❌ The data has expired. Upload the statement again."
-msgstr ""
+msgstr "❌ Dane wygasły. Prześlij wyciąg ponownie."
 
 msgid "❌ Unknown category"
-msgstr ""
+msgstr "❌ Nieznana kategoria"
 
 msgid "➕ Add a budget"
-msgstr ""
+msgstr "➕ Dodaj budżet"
 
 msgid "➕ Add manually"
-msgstr ""
+msgstr "➕ Dodaj ręcznie"
 
 msgid "➕ Set a budget"
-msgstr ""
+msgstr "➕ Ustaw budżet"
 
 msgid "⬅ Back to options"
-msgstr ""
+msgstr "⬅ Powrót do opcji"
 
 msgid "⬅ Back to products"
-msgstr ""
+msgstr "⬅ Powrót do produktów"
 
 msgid "⬅ Back to stores"
-msgstr ""
+msgstr "⬅ Powrót do sklepów"
 
 msgid "🌐 Choose the bot language:"
-msgstr ""
+msgstr "🌐 Wybierz język bota:"
 
 #, python-brace-format
 msgid "🎉 Your {year} in FinanceBot!"
-msgstr ""
+msgstr "🎉 Twój {year} rok w FinanceBot!"
 
 #, python-brace-format
 msgid "🏆 Top category: {name} — {amount} PLN ({pct})"
-msgstr ""
+msgstr "🏆 Najlepsza kategoria: {name} — {amount} PLN ({pct})"
 
 msgid "🏠 Main menu"
-msgstr ""
+msgstr "🏠 Menu główne"
 
 msgid "🏠 Main menu. Send a receipt photo or use /stats, /budget, /export."
-msgstr ""
+msgstr "🏠 Menu główne. Wyślij zdjęcie paragonu lub użyj /stats, /budget, /export."
 
 msgid "🏦 *Erste Bank Polska — statement recognized*"
-msgstr ""
+msgstr "🏦 *Erste Bank Polska — wyciąg rozpoznany*"
 
 #, python-brace-format
 msgid "🏪 *By store — {period}*"
-msgstr ""
+msgstr "🏪 *Według sklepów — {period}*"
 
 msgid "🏪 *Top 5 stores:*"
-msgstr ""
+msgstr "🏪 *Top 5 sklepów:*"
 
 msgid "🏪 *Top stores:*"
-msgstr ""
+msgstr "🏪 *Najlepsze sklepy:*"
 
 msgid "🏪 By store"
-msgstr ""
+msgstr "🏪 Według sklepu"
 
 #, python-brace-format
 msgid "🏪 Spending by store for {period}"
-msgstr ""
+msgstr "🏪 Wydatki według sklepów za {period}"
 
 #, python-brace-format
 msgid "🏪 Store: {store}"
-msgstr ""
+msgstr "🏪 Sklep: {store}"
 
 #, python-brace-format
 msgid "🏪 Your most visited store: {store} ({n} time)"
 msgid_plural "🏪 Your most visited store: {store} ({n} times)"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "🏪 Twój najczęściej odwiedzany sklep: {store} ({n} raz)"
+msgstr[1] "🏪 Twój najczęściej odwiedzany sklep: {store} ({n} razy)"
+msgstr[2] "🏪 Twój najczęściej odwiedzany sklep: {store} ({n} razy)"
 
 #, python-brace-format
 msgid "🏷 Category: {category}"
-msgstr ""
+msgstr "🏷 Kategoria: {category}"
 
 msgid ""
 "👋 Hi! I'm *FinanceBot* — your personal expense tracker.\n"
@@ -1005,165 +1005,178 @@ msgid ""
 "\n"
 "Just send me a photo of a receipt to get started!"
 msgstr ""
+"👋 Cześć! Jestem *FinanceBot* — Twój osobisty tracker wydatków.\n"
+"\n"
+"*Co potrafię:*\n"
+"📸 Odczytuję paragony ze zdjęć\n"
+"📊 Tworzę statystyki i wykresy\n"
+"💰 Pilnuję Twojego budżetu\n"
+"📤 Eksportuję raporty do Excela\n"
+"\n"
+"Wystarczy wysłać mi zdjęcie paragonu, aby zacząć!"
 
 #, python-brace-format
 msgid "💎 Most expensive receipt: {amount} PLN — {store}"
-msgstr ""
+msgstr "💎 Najdroższy paragon: {amount} PLN — {store}"
 
 msgid "💰 *Income:*"
-msgstr ""
+msgstr "💰 *Przychody:*"
 
 msgid "💰 Budget"
-msgstr ""
+msgstr "💰 Budżet"
 
 msgid "💰 Choose a category to set a budget for:"
-msgstr ""
+msgstr "💰 Wybierz kategorię, dla której chcesz ustawić budżet:"
 
 #, python-brace-format
 msgid "💰 Income: {amount} PLN"
-msgstr ""
+msgstr "💰 Przychody: {amount} PLN"
 
 #, python-brace-format
 msgid "💰 Total spent: *{amount} PLN*"
-msgstr ""
+msgstr "💰 Razem wydano: *{amount} PLN*"
 
 #, python-brace-format
 msgid "💰 Total: *{amount} PLN*"
-msgstr ""
+msgstr "💰 Razem: *{amount} PLN*"
 
 #, python-brace-format
 msgid "💰 Total: {amount}"
-msgstr ""
+msgstr "💰 Razem: {amount}"
 
 msgid "💱 *By currency:*"
-msgstr ""
+msgstr "💱 *Według waluty:*"
 
 msgid "💳 *Revolut — consolidated statement recognized*"
-msgstr ""
+msgstr "💳 *Revolut — zbiorczy wyciąg rozpoznany*"
 
 #, python-brace-format
 msgid ""
 "💳 Card payment abroad: {amount} {currency} ({amount_pln} PLN)\n"
 "What should this payment be called? Enter the store/service name:"
 msgstr ""
+"💳 Płatność kartą za granicą: {amount} {currency} ({amount_pln} PLN)\n"
+"Jak nazwać tę płatność? Podaj nazwę sklepu/usługi:"
 
 #, python-brace-format
 msgid "💵 Cash withdrawals: *{amount} PLN*"
-msgstr ""
+msgstr "💵 Wypłaty gotówki: *{amount} PLN*"
 
 msgid "💸 *Expenses:*"
-msgstr ""
+msgstr "💸 *Wydatki:*"
 
 #, python-brace-format
 msgid "💸 Expenses: {amount} PLN"
-msgstr ""
+msgstr "💸 Wydatki: {amount} PLN"
 
 #, python-brace-format
 msgid "💸 Spent: *{amount} PLN*"
-msgstr ""
+msgstr "💸 Wydano: *{amount} PLN*"
 
 #, python-brace-format
 msgid "💸 Spent: *{amount} PLN* in {n} transaction"
 msgid_plural "💸 Spent: *{amount} PLN* in {n} transactions"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "💸 Wydano: *{amount} PLN* w {n} transakcji"
+msgstr[1] "💸 Wydano: *{amount} PLN* w {n} transakcjach"
+msgstr[2] "💸 Wydano: *{amount} PLN* w {n} transakcjach"
 
 #, python-brace-format
 msgid "💸 Total spent: *{amount} PLN*"
-msgstr ""
+msgstr "💸 Razem wydano: *{amount} PLN*"
 
 #, python-brace-format
 msgid "💸 Total: *{amount} PLN*"
-msgstr ""
+msgstr "💸 Razem: *{amount} PLN*"
 
 msgid "📂 *By category:*"
-msgstr ""
+msgstr "📂 *Według kategorii:*"
 
 #, python-brace-format
 msgid "📅 *Daily report — {date}*"
-msgstr ""
+msgstr "📅 *Raport dzienny — {date}*"
 
 msgid "📅 *Subscriptions*"
-msgstr ""
+msgstr "📅 *Subskrypcje*"
 
 msgid "📅 Choose a period:"
-msgstr ""
+msgstr "📅 Wybierz okres:"
 
 #, python-brace-format
 msgid "📅 Date: {date}"
-msgstr ""
+msgstr "📅 Data: {date}"
 
 msgid ""
 "📅 Enter the period as *DD.MM.YYYY-DD.MM.YYYY*\n"
 "For example: `01.05.2026-31.05.2026`"
 msgstr ""
+"📅 Podaj okres jako *DD.MM.RRRR-DD.MM.RRRR*\n"
+"Na przykład: `01.05.2026-31.05.2026`"
 
 msgid "📅 Subscriptions"
-msgstr ""
+msgstr "📅 Subskrypcje"
 
 #, python-brace-format
 msgid "📈 *Monthly report — {month}*"
-msgstr ""
+msgstr "📈 *Raport miesięczny — {month}*"
 
 msgid "📈 Daily chart"
-msgstr ""
+msgstr "📈 Wykres dzienny"
 
 #, python-brace-format
 msgid "📈 End-of-month forecast: ~{amount} PLN (at the current spending rate)"
-msgstr ""
+msgstr "📈 Prognoza na koniec miesiąca: ~{amount} PLN (przy obecnym tempie wydatków)"
 
 #, python-brace-format
 msgid "📈 Most expensive month: {month} — {amount} PLN"
-msgstr ""
+msgstr "📈 Najdroższy miesiąc: {month} — {amount} PLN"
 
 #, python-brace-format
 msgid "📈 Spending trend for {period}"
-msgstr ""
+msgstr "📈 Trend wydatków za {period}"
 
 #, python-brace-format
 msgid "📊 *Statistics for {period}*"
-msgstr ""
+msgstr "📊 *Statystyki za {period}*"
 
 #, python-brace-format
 msgid "📊 *Weekly report — {start} – {end}*"
-msgstr ""
+msgstr "📊 *Raport tygodniowy — {start} – {end}*"
 
 msgid "📊 By category"
-msgstr ""
+msgstr "📊 Według kategorii"
 
 msgid "📊 Export more"
-msgstr ""
+msgstr "📊 Eksportuj więcej"
 
 #, python-brace-format
 msgid "📊 Purchases found: *{count}*"
-msgstr ""
+msgstr "📊 Znaleziono zakupów: *{count}*"
 
 msgid "📊 Spending statistics:"
-msgstr ""
+msgstr "📊 Statystyki wydatków:"
 
 msgid "📊 Statistics"
-msgstr ""
+msgstr "📊 Statystyki"
 
 msgid "📊 Transactions"
-msgstr ""
+msgstr "📊 Transakcje"
 
 #, python-brace-format
 msgid "📊 Transactions found: *{count}*"
-msgstr ""
+msgstr "📊 Znaleziono transakcji: *{count}*"
 
 msgid "📋 *Budget status:*"
-msgstr ""
+msgstr "📋 *Status budżetów:*"
 
 msgid "📋 *Budgets (current month):*"
-msgstr ""
+msgstr "📋 *Budżety (bieżący miesiąc):*"
 
 #, python-brace-format
 msgid "📋 *Budgets for {month}:*"
-msgstr ""
+msgstr "📋 *Budżety na {month}:*"
 
 msgid "📋 *Budgets:*"
-msgstr ""
+msgstr "📋 *Budżety:*"
 
 msgid ""
 "📋 *Commands:*\n"
@@ -1175,8 +1188,7 @@ msgid ""
 "💰 /budget — budgets by category\n"
 "✏️ /add — add an expense manually\n"
 "📤 /export — export to an Excel file\n"
-"🔍 /search — search expenses in plain text (e.g. “Kaufland expenses in "
-"June”)\n"
+"🔍 /search — search expenses in plain text (e.g. “Kaufland expenses in June”)\n"
 "🎁 /wrapped — your year in one picture\n"
 "👥 /split — split a receipt with other people\n"
 "🌐 /language — change language\n"
@@ -1186,92 +1198,115 @@ msgid ""
 "🛒 Groceries · ☕ Cafés · 💊 Pharmacy · 🚗 Transport\n"
 "📱 Electronics · 👕 Clothing · 🏠 Household · 📦 Other"
 msgstr ""
+"📋 *Polecenia:*\n"
+"\n"
+"📸 *Paragony*\n"
+"Wystarczy wysłać zdjęcie paragonu — sam wszystko odczytam.\n"
+"\n"
+"📊 /stats — statystyki wydatków (tydzień / miesiąc / rok)\n"
+"💰 /budget — budżety według kategorii\n"
+"✏️ /add — dodaj wydatek ręcznie\n"
+"📤 /export — eksport do pliku Excel\n"
+"🔍 /search — szukaj wydatków zwykłym tekstem (np. „wydatki w Kaufland w czerwcu”)\n"
+"🎁 /wrapped — Twój rok w jednym obrazku\n"
+"👥 /split — podziel paragon z innymi osobami\n"
+"🌐 /language — zmień język\n"
+"❌ /cancel — anuluj bieżącą operację\n"
+"\n"
+"*Kategorie wydatków:*\n"
+"🛒 Produkty spożywcze · ☕ Kawiarnie · 💊 Apteka · 🚗 Transport\n"
+"📱 Elektronika · 👕 Odzież · 🏠 Dom · 📦 Inne"
 
 msgid "📋 All products"
-msgstr ""
+msgstr "📋 Wszystkie produkty"
 
 msgid "📋 Show all budgets"
-msgstr ""
+msgstr "📋 Pokaż wszystkie budżety"
 
 msgid "📋 Show budgets"
-msgstr ""
+msgstr "📋 Pokaż budżety"
 
 msgid ""
 "📤 *Data export*\n"
 "\n"
 "What do you want to export?"
 msgstr ""
+"📤 *Eksport danych*\n"
+"\n"
+"Co chcesz wyeksportować?"
 
 msgid "📦 *By category:*"
-msgstr ""
+msgstr "📦 *Według kategorii:*"
 
 #, python-brace-format
 msgid "📦 *Product statistics — {period}*"
-msgstr ""
+msgstr "📦 *Statystyki produktów — {period}*"
 
 msgid "📦 Everything"
-msgstr ""
+msgstr "📦 Wszystko"
 
 #, python-brace-format
 msgid "📦 Items ({count}):"
-msgstr ""
+msgstr "📦 Pozycje ({count}):"
 
 msgid "📦 Products"
-msgstr ""
+msgstr "📦 Produkty"
 
 #, python-brace-format
 msgid "📦 Products — {period}"
-msgstr ""
+msgstr "📦 Produkty — {period}"
 
 msgid "📭 No data for the selected period."
-msgstr ""
+msgstr "📭 Brak danych dla wybranego okresu."
 
 msgid "🔁 *Frequently bought:*"
-msgstr ""
+msgstr "🔁 *Często kupowane:*"
 
 #, python-brace-format
 msgid "🔄 *Comparison — {current} vs {previous}*"
-msgstr ""
+msgstr "🔄 *Porównanie — {current} vs {previous}*"
 
 msgid "🔄 Choose a period to compare with the previous one:"
-msgstr ""
+msgstr "🔄 Wybierz okres do porównania z poprzednim:"
 
 msgid "🔄 Compare periods"
-msgstr ""
+msgstr "🔄 Porównaj okresy"
 
 msgid "🔍 *Search results*"
-msgstr ""
+msgstr "🔍 *Wyniki wyszukiwania*"
 
 msgid "🔍 Enter a product name:"
-msgstr ""
+msgstr "🔍 Podaj nazwę produktu:"
 
 msgid "🔍 Find a product"
-msgstr ""
+msgstr "🔍 Znajdź produkt"
 
 #, python-brace-format
 msgid "🚨 '{category}' budget exceeded ({spent} / {limit} PLN)"
-msgstr ""
+msgstr "🚨 Budżet '{category}' przekroczony ({spent} / {limit} PLN)"
 
 #, python-brace-format
 msgid ""
 "🚨 *{category} budget exceeded!*\n"
 "{spent} / {limit} PLN — over by {overage} PLN"
 msgstr ""
+"🚨 *Budżet {category} przekroczony!*\n"
+"{spent} / {limit} PLN — przekroczenie o {overage} PLN"
 
 #, python-brace-format
 msgid "🧴 Volume: *{volume}*"
-msgstr ""
+msgstr "🧴 Objętość: *{volume}*"
 
 #, python-brace-format
 msgid "🧾 Number of receipts: *{count}*"
-msgstr ""
+msgstr "🧾 Liczba paragonów: *{count}*"
 
 msgid "🧾 Receipt items"
-msgstr ""
+msgstr "🧾 Pozycje paragonu"
 
 #, python-brace-format
 msgid "🧾 Transactions: *{count}*"
-msgstr ""
+msgstr "🧾 Transakcji: *{count}*"
 
 #~ msgid "✅ Confirm"
 #~ msgstr ""
