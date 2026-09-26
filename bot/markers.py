@@ -38,6 +38,9 @@ LEGACY_ALIASES = {
     "Расход": MANUAL_EXPENSE,
 }
 
+# Every stored value that is bot-generated (markers and their legacy aliases).
+GENERATED_NAMES = (*_LABELS, *LEGACY_ALIASES)
+
 
 def canonical(value: str | None) -> str | None:
     """Marker for a legacy Russian value, otherwise the value itself."""
