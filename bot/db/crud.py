@@ -35,11 +35,26 @@ def _item_pln_col():
     )
 
 
+def _not_income():
+    """Everything except income: salary or refunds are not purchases, so they
+    stay out of item / product statistics."""
+    return func.coalesce(Receipt.tx_type, "purchase") != "income"
+
+
+def _store_spending():
+    """Receipts that are spending at a store: not income, not cash withdrawals."""
+    return func.coalesce(Receipt.tx_type, "purchase").notin_(("income", "cash_withdrawal"))
+
+
 def _has_receipt_lines():
     """Receipts whose items are real receipt lines (photo/PDF), for product
     stats and item export. Bank screenshots also carry a photo, but their one
-    item is the whole transaction, not a product."""
-    return Receipt.photo_file_id.isnot(None) & (func.coalesce(Receipt.source, "") != "screenshot")
+    item is the whole transaction, not a product. Income is never a product."""
+    return (
+        Receipt.photo_file_id.isnot(None)
+        & (func.coalesce(Receipt.source, "") != "screenshot")
+        & _not_income()
+    )
 
 
 def _store_key():
@@ -119,7 +134,7 @@ async def get_items_grouped(session: AsyncSession, user_id: int, days: int) -> l
             func.sum(_item_pln_col()).label("total_pln"),
         )
         .join(Receipt, Item.receipt_id == Receipt.id)
-        .where(Receipt.user_id == user_id, Receipt.date >= since)
+        .where(Receipt.user_id == user_id, Receipt.date >= since, _not_income())
         .group_by(markers.canonical_sql(Item.name))
         .order_by(func.sum(_item_pln_col()).desc())
     )
@@ -155,7 +170,7 @@ async def get_spending_by_store(session: AsyncSession, user_id: int, days: int) 
             Receipt.user_id == user_id,
             Receipt.date >= since,
             Receipt.store.isnot(None),
-            (Receipt.tx_type != "cash_withdrawal") | Receipt.tx_type.is_(None),
+            _store_spending(),
         )
         .group_by(_store_key())
         .order_by(func.sum(_personal_pln_col()).desc())
@@ -579,7 +594,7 @@ async def get_store_stats_by_period(session: AsyncSession, user_id: int, period_
     conditions = [
         Receipt.user_id == user_id,
         Receipt.store.isnot(None),
-        (Receipt.tx_type != "cash_withdrawal") | Receipt.tx_type.is_(None),
+        _store_spending(),
     ]
     if since:
         conditions.append(Receipt.date >= since)
@@ -682,7 +697,7 @@ async def get_spending_by_store_range(
             Receipt.date >= date_from,
             Receipt.date <= date_to,
             Receipt.store.isnot(None),
-            (Receipt.tx_type != "cash_withdrawal") | Receipt.tx_type.is_(None),
+            _store_spending(),
         )
         .group_by(_store_key())
         .order_by(func.sum(_personal_pln_col()).desc())
