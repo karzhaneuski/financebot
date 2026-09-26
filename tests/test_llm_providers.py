@@ -3,6 +3,7 @@ and the user-facing "temporarily unavailable" path. All SDKs are mocked —
 no real API calls."""
 import json
 import re
+from datetime import date
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -95,7 +96,8 @@ async def test_gemini_request_uses_prompt_schema_image_and_model(gemini):
     config = kwargs["config"]
     assert config.response_mime_type == "application/json"
     assert config.response_json_schema == RECEIPT_SCHEMA
-    assert config.system_instruction == SYSTEM_PROMPT
+    assert config.system_instruction.startswith(SYSTEM_PROMPT)
+    assert config.system_instruction.endswith(f"Today's date is {date.today().isoformat()}.")
     image, prompt = kwargs["contents"]
     assert image.inline_data.data == b"jpeg-bytes"
     assert image.inline_data.mime_type == "image/jpeg"

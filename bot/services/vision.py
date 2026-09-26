@@ -32,6 +32,13 @@ Rules:
     * SKIP subtotal / total lines ("Suma", "Suma PLN", "Do zapłaty").
 - If you cannot read a value, use null.
 - Do NOT apply discounts yourself — emit them as separate negative-price items in order.
+- date / year_visible: set year_visible=true only if a year is printed next to the date. If only
+  day+month is shown (e.g. "23 sie.", "23 авг."), set year_visible=false and still fill "date" with
+  your best guess — the caller corrects the year from today's date. Never take a year from your
+  training data.
+- If the image is a bank/payment app screen rather than a shop receipt, the amount of a payment is
+  often shown with a minus sign (e.g. "-13,04 €"): that sign only marks money going out — use the
+  positive amount for total and for the item.
 
 Biedronka receipt format (store name "Biedronka" or header "Jeronimo Martins Polska"):
 - Item lines: "NAME  PTU  QUANTITY x  UNIT_PRICE  TOTAL", e.g. "PiwoCoronaExtra450n  A  10.000 x  5,99  59,90"
@@ -44,6 +51,7 @@ USER_PROMPT = """Parse this receipt and return JSON in this exact format (no mar
 {
   "store": "string or null",
   "date": "YYYY-MM-DD or null",
+  "year_visible": true,
   "currency": "PLN",
   "total": 0.00,
   "items": [
@@ -74,6 +82,7 @@ RECEIPT_SCHEMA = {
     "properties": {
         "store": _NULLABLE_STR,
         "date": {"type": ["string", "null"], "description": "YYYY-MM-DD"},
+        "year_visible": {"type": ["boolean", "null"]},
         "currency": {"type": "string", "description": "ISO 4217 code, e.g. PLN"},
         "items": {
             "type": "array",
@@ -99,7 +108,7 @@ RECEIPT_SCHEMA = {
                            "(the amount paid), not a subtotal, tax or payment line. Null only if unreadable.",
         },
     },
-    "required": ["store", "date", "currency", "items", "total"],
+    "required": ["store", "date", "year_visible", "currency", "items", "total"],
 }
 
 # The Claude prompt answers the literal `null` for "not a transaction screen";
@@ -238,9 +247,13 @@ def _infer_recent_year(date_str: str | None, today: date) -> str | None:
 
 _BANK_TX_SYSTEM_TEMPLATE = """You are a bank/payment-app transaction screenshot parser (Erste Bank, Revolut, mobile wallets, etc.).
 
-Examine the image. If it shows a transaction detail screen — look for any of:
-  "Szczegóły transakcji", "Data transakcji", or both "Odbiorca" and "Nadawca" fields —
-extract the transaction data and return a JSON object.
+Examine the image. If it shows the detail screen of ONE transaction in a banking or payment app,
+in any language, extract the transaction data and return a JSON object. Typical signs: a single
+merchant/recipient name, one amount (a payment is often shown with a minus sign), a date or
+date+time, and status/card/account fields — e.g. Erste/Polish "Szczegóły transakcji",
+"Data transakcji", "Odbiorca", "Nadawca"; Revolut/English "Completed", "Card payment",
+"Statement"; Russian "Выполнено", "Оплата картой", "Выписка". A shop receipt (printed list of
+products with a total) is NOT a transaction screen.
 
 If the image is NOT a bank/payment transaction screen (shop receipt, other app), return: null
 
@@ -320,15 +333,39 @@ async def parse_bank_transaction_screenshot(image_bytes: bytes, today: date | No
     }
 
 
-async def parse_receipt(image_bytes: bytes | list[bytes]) -> dict:
+def _unsign_debit(data: dict) -> None:
+    """A bank/payment screen parsed as a receipt shows a payment as "-13,04 €":
+    negative total and every item negative. That minus only marks money going
+    out — make it positive. Runs on the raw model output, before deposit
+    returns are negated, so a real bottle-return receipt stays negative;
+    receipts with any non-negative line (discounts under products) are left
+    alone."""
+    total = data.get("total")
+    items = data.get("items") if isinstance(data.get("items"), list) else []
+    prices = [it.get("total_price") for it in items if it.get("total_price") is not None]
+    if not isinstance(total, (int, float)) or total >= 0 or any(p >= 0 for p in prices):
+        return
+    if any(it.get("deposit_type") for it in items):
+        return
+    data["total"] = -total
+    for it in items:
+        for key in ("total_price", "unit_price"):
+            if isinstance(it.get(key), (int, float)):
+                it[key] = -it[key]
+
+
+async def parse_receipt(image_bytes: bytes | list[bytes], today: date | None = None) -> dict:
     """Parse a receipt photo into the validated receipt dict.
 
     Raises LLMUnavailableError when the provider is out of quota/balance or
     down, ValueError when the image couldn't be read, LLMError otherwise.
     """
+    today = today or date.today()
     try:
         data = await get_provider().generate_json(
-            system=SYSTEM_PROMPT,
+            # The model has no clock; without today's date it fills a missing
+            # year from its training data.
+            system=f"{SYSTEM_PROMPT}\n\nToday's date is {today.isoformat()}.",
             prompt=USER_PROMPT,
             schema=RECEIPT_SCHEMA,
             tier="vision",
@@ -343,7 +380,21 @@ async def parse_receipt(image_bytes: bytes | list[bytes]) -> dict:
     if not isinstance(data, dict):
         raise ValueError("Receipt parser returned no JSON object")
 
+    _unsign_debit(data)
     if isinstance(data.get("items"), list):
         data["items"] = _postprocess_items(data["items"])
+
+    # Same rule as bank screenshots: a year that isn't printed is recomputed
+    # (most recent occurrence of that day/month), and a future date means the
+    # model picked the wrong year.
+    date_str = data.get("date")
+    if isinstance(date_str, str) and date_str:
+        try:
+            future = date.fromisoformat(date_str[:10]) > today
+        except ValueError:
+            future = False
+        if data.get("year_visible") is False or future:
+            data["date"] = _infer_recent_year(date_str[:10], today)
+    data.pop("year_visible", None)
 
     return validate_receipt(data)
