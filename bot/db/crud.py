@@ -3,7 +3,7 @@ from calendar import monthrange
 from datetime import date, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import delete, exists, func, or_, select
+from sqlalchemy import case, delete, exists, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -23,6 +23,16 @@ def _get_since(period_key: str) -> date | None:
 def _personal_pln_col():
     """Personal expense amount: split share when set, else the full total (Feature 3)."""
     return func.coalesce(Receipt.personal_total_pln, Receipt.total_pln)
+
+
+def _item_pln_col():
+    """Item price in PLN. Item prices are stored in the receipt's currency;
+    convert with the receipt's own rate (total_pln / total) — the rate baked
+    in when it was saved, so category sums agree with receipt totals."""
+    return case(
+        (Receipt.currency == "PLN", Item.total_price),
+        else_=func.coalesce(Item.total_price * Receipt.total_pln / func.nullif(Receipt.total, 0), 0),
+    )
 
 
 def _store_key():
@@ -99,12 +109,12 @@ async def get_items_grouped(session: AsyncSession, user_id: int, days: int) -> l
         select(
             markers.canonical_sql(Item.name).label("name"),
             func.sum(Item.quantity).label("total_quantity"),
-            func.sum(Item.total_price).label("total_pln"),
+            func.sum(_item_pln_col()).label("total_pln"),
         )
         .join(Receipt, Item.receipt_id == Receipt.id)
         .where(Receipt.user_id == user_id, Receipt.date >= since)
         .group_by(markers.canonical_sql(Item.name))
-        .order_by(func.sum(Item.total_price).desc())
+        .order_by(func.sum(_item_pln_col()).desc())
     )
     result = await session.execute(stmt)
     return [{"name": row.name, "total_quantity": float(row.total_quantity), "total_pln": float(row.total_pln)} for row in result]
@@ -115,12 +125,12 @@ async def get_spending_by_category(session: AsyncSession, user_id: int, days: in
     stmt = (
         select(
             Item.category,
-            func.sum(Item.total_price).label("total_pln"),
+            func.sum(_item_pln_col()).label("total_pln"),
         )
         .join(Receipt, Item.receipt_id == Receipt.id)
         .where(Receipt.user_id == user_id, Receipt.date >= since, _personal_item_filter())
         .group_by(Item.category)
-        .order_by(func.sum(Item.total_price).desc())
+        .order_by(func.sum(_item_pln_col()).desc())
     )
     result = await session.execute(stmt)
     return [{"category": row.category.value, "total_pln": float(row.total_pln)} for row in result]
@@ -286,8 +296,9 @@ async def create_bank_transactions(
             receipt_id=receipt.id,
             name=description or markers.FOREIGN_CARD_PAYMENT,
             quantity=1,
-            unit_price=total_pln,
-            total_price=total_pln,
+            # Item prices are in the receipt's currency, like every other source.
+            unit_price=amount,
+            total_price=amount,
             category=category,
         )
         session.add(item)
@@ -338,7 +349,7 @@ async def get_monthly_spending_by_category(session: AsyncSession, user_id: int, 
     stmt = (
         select(
             Item.category,
-            func.sum(Item.total_price).label("total_pln"),
+            func.sum(_item_pln_col()).label("total_pln"),
         )
         .join(Receipt, Item.receipt_id == Receipt.id)
         .where(Receipt.user_id == user_id, Receipt.date >= start, Receipt.date <= end, _personal_item_filter())
@@ -462,7 +473,7 @@ async def get_products_stats(
     stmt = (
         select(
             _norm_col().label("norm_name"),
-            func.sum(Item.total_price).label("total_spent"),
+            func.sum(_item_pln_col()).label("total_spent"),
             func.sum(Item.quantity).label("total_qty"),
             func.count(func.distinct(Receipt.store)).label("store_count"),
             func.sum(Item.quantity * Item.volume_ml).label("total_volume_ml"),
@@ -470,7 +481,7 @@ async def get_products_stats(
         .join(Receipt, Item.receipt_id == Receipt.id)
         .where(*conditions)
         .group_by(_norm_col())
-        .order_by(func.sum(Item.total_price).desc())
+        .order_by(func.sum(_item_pln_col()).desc())
     )
     result = await session.execute(stmt)
     return [
@@ -494,7 +505,7 @@ async def get_product_detail(session: AsyncSession, user_id: int, normalized_nam
 
     total_stmt = (
         select(
-            func.sum(Item.total_price).label("total_spent"),
+            func.sum(_item_pln_col()).label("total_spent"),
             func.sum(Item.quantity).label("total_qty"),
             func.sum(Item.quantity * Item.volume_ml).label("total_volume_ml"),
         )
@@ -506,14 +517,14 @@ async def get_product_detail(session: AsyncSession, user_id: int, normalized_nam
     store_stmt = (
         select(
             Receipt.store,
-            func.sum(Item.total_price).label("total_spent"),
+            func.sum(_item_pln_col()).label("total_spent"),
             func.sum(Item.quantity).label("total_qty"),
             func.sum(Item.quantity * Item.volume_ml).label("total_volume_ml"),
         )
         .join(Receipt, Item.receipt_id == Receipt.id)
         .where(*conditions, Receipt.store.isnot(None))
         .group_by(Receipt.store)
-        .order_by(func.sum(Item.total_price).desc())
+        .order_by(func.sum(_item_pln_col()).desc())
     )
     by_store = [
         {
@@ -526,14 +537,14 @@ async def get_product_detail(session: AsyncSession, user_id: int, normalized_nam
     ]
 
     history_stmt = (
-        select(Receipt.date, Receipt.store, Item.quantity, Item.total_price)
+        select(Receipt.date, Receipt.store, Item.quantity, _item_pln_col().label("total_pln"))
         .join(Receipt, Item.receipt_id == Receipt.id)
         .where(*conditions)
         .order_by(Receipt.date.desc())
         .limit(10)
     )
     history = [
-        {"date": r.date, "store": r.store, "qty": float(r.quantity), "total": float(r.total_price)}
+        {"date": r.date, "store": r.store, "qty": float(r.quantity), "total": float(r.total_pln)}
         for r in await session.execute(history_stmt)
     ]
 
@@ -614,7 +625,8 @@ async def get_items_for_export(
         conditions.append(Receipt.date <= date_to)
     stmt = (
         select(Receipt.date, Receipt.store, Item.name, Item.normalized_name,
-               Item.quantity, Item.unit_price, Item.total_price, Item.category)
+               Item.quantity, Item.unit_price, Item.total_price, Receipt.currency,
+               _item_pln_col().label("total_pln"), Item.category)
         .join(Item, Item.receipt_id == Receipt.id)
         .where(*conditions)
         .order_by(Receipt.date.desc(), Item.id)
@@ -642,12 +654,12 @@ async def get_spending_by_category_range(
     stmt = (
         select(
             Item.category,
-            func.sum(Item.total_price).label("total_pln"),
+            func.sum(_item_pln_col()).label("total_pln"),
         )
         .join(Receipt, Item.receipt_id == Receipt.id)
         .where(Receipt.user_id == user_id, Receipt.date >= date_from, Receipt.date <= date_to, _personal_item_filter())
         .group_by(Item.category)
-        .order_by(func.sum(Item.total_price).desc())
+        .order_by(func.sum(_item_pln_col()).desc())
     )
     result = await session.execute(stmt)
     return [{"category": row.category.value, "total_pln": float(row.total_pln)} for row in result]
@@ -847,13 +859,13 @@ async def get_store_products(session: AsyncSession, user_id: int, store: str, pe
     stmt = (
         select(
             _norm_col().label("norm_name"),
-            func.sum(Item.total_price).label("total_spent"),
+            func.sum(_item_pln_col()).label("total_spent"),
             func.sum(Item.quantity).label("total_qty"),
         )
         .join(Receipt, Item.receipt_id == Receipt.id)
         .where(*conditions)
         .group_by(_norm_col())
-        .order_by(func.sum(Item.total_price).desc())
+        .order_by(func.sum(_item_pln_col()).desc())
         .limit(20)
     )
     result = await session.execute(stmt)

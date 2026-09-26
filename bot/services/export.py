@@ -50,7 +50,8 @@ async def build_excel(session: AsyncSession, user_id: int) -> io.BytesIO:
 
     # --- Sheet 2: Items ---
     ws2 = wb.create_sheet(_("Items"))
-    _apply_header(ws2, [_("Date"), _("Store"), _("Item"), _("Qty"), _("Price"), _("Total"), _("Category")])
+    _apply_header(ws2, [_("Date"), _("Store"), _("Item"), _("Qty"), _("Price"), _("Total"), _("Currency"),
+                        _("Total PLN"), _("Category")])
 
     for r in receipts:
         date_str = r.date.strftime("%d.%m.%Y") if r.date else ""
@@ -63,6 +64,8 @@ async def build_excel(session: AsyncSession, user_id: int) -> io.BytesIO:
                 float(item.quantity),
                 float(item.unit_price) if item.unit_price is not None else "",
                 float(item.total_price),
+                r.currency,
+                round(r.to_pln(item.total_price), 2),
                 format_category(item.category.value),
             ])
 

@@ -52,6 +52,14 @@ class Receipt(Base):
             return float(self.personal_total_pln)
         return float(self.total_pln)
 
+    def to_pln(self, amount: float) -> float:
+        """Convert an amount in this receipt's currency (e.g. an item price) to
+        PLN with the receipt's own rate — Python twin of crud._item_pln_col()."""
+        if self.currency == "PLN":
+            return float(amount)
+        total = float(self.total)
+        return float(amount) * float(self.total_pln) / total if total else 0.0
+
     def __repr__(self) -> str:
         return f"<Receipt id={self.id} user_id={self.user_id} store={self.store!r} total={self.total} {self.currency}>"
 
@@ -64,6 +72,8 @@ class Item(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     normalized_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
     quantity: Mapped[float] = mapped_column(Numeric(10, 3), nullable=False, default=1)
+    # Prices are in the receipt's currency (receipts.currency), never PLN
+    # unless the receipt is; crud._item_pln_col() converts them for sums.
     unit_price: Mapped[Optional[float]] = mapped_column(Numeric(12, 2))
     total_price: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
     category: Mapped[Category] = mapped_column(Enum(Category), nullable=False, default=Category.other)

@@ -81,6 +81,7 @@ async def make_receipt(session, **kwargs) -> tuple[Receipt, list[int]]:
         photo_file_id=kwargs.pop("photo_file_id", "file-1"),
         tx_type=kwargs.pop("tx_type", "purchase"),
         category=kwargs.pop("category", None),
+        source=kwargs.pop("source", None),
     )
     session.add(r)
     await session.flush()

@@ -73,7 +73,8 @@ def _build_transactions_csv(receipts: list) -> str:
 def _build_items_csv(rows: list) -> str:
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow(["date", "store", "product", "normalized_name", "quantity", "unit_price", "total_price", "category"])
+    writer.writerow(["date", "store", "product", "normalized_name", "quantity", "unit_price", "total_price",
+                     "currency", "total_pln", "category"])
     for row in rows:
         writer.writerow([
             row.date.isoformat() if row.date else "",
@@ -83,6 +84,8 @@ def _build_items_csv(rows: list) -> str:
             float(row.quantity),
             float(row.unit_price) if row.unit_price is not None else "",
             float(row.total_price),
+            row.currency,
+            round(float(row.total_pln), 2),
             row.category.value,
         ])
     return buf.getvalue()
@@ -111,7 +114,7 @@ def _build_all_csv(receipts: list, item_rows: list) -> str:
             row.date.isoformat() if row.date else "",
             display_name(row.store) or "",
             row.name,
-            float(row.total_price),
+            round(float(row.total_pln), 2),
             row.category.value,
             "receipt",
         ])

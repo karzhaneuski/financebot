@@ -78,6 +78,12 @@ items: id, receipt_id, name, normalized_name, quantity, unit_price, total_price,
 budgets: id, user_id, category, limit_pln, month (YYYY-MM), last_notified_pct
 users: user_id (PK, Telegram id), language (ru|en|pl), created_at
 ```
+`items.unit_price` / `items.total_price` are in the **receipt's currency**
+(`receipts.currency`) for every source. Any item-based sum (categories,
+budgets, products, Wrapped, reports, API, export) must go through
+`crud._item_pln_col()` (Python: `Receipt.to_pln()`), which converts with the
+receipt's own rate `total_pln / total` — never sum `Item.total_price` raw.
+
 `receipts.personal_total_pln` and `items.is_personal` are both nullable —
 NULL means "never split", which must behave exactly like the pre-/split
 schema (see "Personal totals & splitting" below).
