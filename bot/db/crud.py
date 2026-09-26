@@ -46,14 +46,18 @@ def _store_spending():
     return func.coalesce(Receipt.tx_type, "purchase").notin_(("income", "cash_withdrawal"))
 
 
-def _has_receipt_lines():
-    """Receipts whose items are real receipt lines (photo/PDF), for product
-    stats and item export. Bank screenshots also carry a photo, but their one
-    item is the whole transaction, not a product. Income is never a product."""
+def _is_product_line():
+    """Items that are real receipt lines, for product stats and item export.
+
+    Receipts from a photo, a PDF or /add have no source; whether a photo is
+    stored does not matter (PDF receipts have none). Bank screenshots and
+    statement imports carry a source: their one item is the whole
+    transaction, not a product. Neither is income or a cash withdrawal, nor
+    the placeholder item /add creates (a bot-generated marker name)."""
     return (
-        Receipt.photo_file_id.isnot(None)
-        & (func.coalesce(Receipt.source, "") != "screenshot")
-        & _not_income()
+        Receipt.source.is_(None)
+        & _store_spending()
+        & Item.name.notin_(markers.GENERATED_NAMES)
     )
 
 
@@ -483,7 +487,7 @@ async def get_products_stats(
     date_to: date | None = None,
 ) -> list[dict[str, Any]]:
     since = _get_since(period_key)
-    conditions = [Receipt.user_id == user_id, _has_receipt_lines()]
+    conditions = [Receipt.user_id == user_id, _is_product_line()]
     if since:
         conditions.append(Receipt.date >= since)
     # Explicit range (used by /wrapped for year scoping) overrides period_key.
@@ -521,7 +525,7 @@ async def get_products_stats(
 
 async def get_product_detail(session: AsyncSession, user_id: int, normalized_name: str, period_key: str) -> dict[str, Any]:
     since = _get_since(period_key)
-    conditions = [Receipt.user_id == user_id, _has_receipt_lines(), _norm_col() == normalized_name]
+    conditions = [Receipt.user_id == user_id, _is_product_line(), _norm_col() == normalized_name]
     if since:
         conditions.append(Receipt.date >= since)
 
@@ -583,7 +587,7 @@ async def get_all_normalized_names(session: AsyncSession, user_id: int) -> list[
     stmt = (
         select(func.distinct(_norm_col()))
         .join(Receipt, Item.receipt_id == Receipt.id)
-        .where(Receipt.user_id == user_id, _has_receipt_lines())
+        .where(Receipt.user_id == user_id, _is_product_line())
     )
     result = await session.execute(stmt)
     return [row[0] for row in result if row[0]]
@@ -640,7 +644,7 @@ async def get_items_for_export(
     date_from: date | None,
     date_to: date | None,
 ) -> list[tuple]:
-    conditions = [Receipt.user_id == user_id, _has_receipt_lines()]
+    conditions = [Receipt.user_id == user_id, _is_product_line()]
     if date_from:
         conditions.append(Receipt.date >= date_from)
     if date_to:
@@ -874,7 +878,7 @@ async def get_recent_receipts(session: AsyncSession, user_id: int, limit: int) -
 
 async def get_store_products(session: AsyncSession, user_id: int, store: str, period_key: str) -> list[dict[str, Any]]:
     since = _get_since(period_key)
-    conditions = [Receipt.user_id == user_id, _store_key() == store, _has_receipt_lines()]
+    conditions = [Receipt.user_id == user_id, _store_key() == store, _is_product_line()]
     if since:
         conditions.append(Receipt.date >= since)
 
