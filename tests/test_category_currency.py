@@ -181,3 +181,57 @@ async def test_exports_show_native_price_and_pln(db_session):
 
     all_csv = _build_all_csv([], rows).splitlines()
     assert all_csv[1].split(",")[4] == "25.8"  # amount_pln column
+
+
+# ── bank screenshots get one item ─────────────────────────────────────────────
+
+async def test_screenshot_saved_with_item_counts_in_category_and_budget(db_session):
+    from unittest.mock import AsyncMock, patch
+
+    from bot.handlers.receipt import handle_receipt_photo
+    from tests.test_recat_formatting import EUR_RATE, _FakeBot, _FakeMessage, _FakeRedis
+
+    bank_tx = {"merchant": "Starbucks", "amount": 10.0, "currency": "EUR", "date": "2026-06-15", "raw_title": None}
+    with patch("bot.handlers.receipt.parse_bank_transaction_screenshot", AsyncMock(return_value=bank_tx)), \
+            patch("bot.handlers.receipt.check_anomaly", AsyncMock(return_value=None)):
+        await handle_receipt_photo(_FakeMessage(), bot=_FakeBot(), session=db_session, redis=_FakeRedis())
+
+    item = (await db_session.execute(select(Item))).scalar_one()
+    assert float(item.total_price) == 10.0 and item.category.value == "cafe"
+    by_month = await crud.get_monthly_spending_by_category(db_session, 1, "2026-06")
+    assert _approx(by_month) == {"cafe": round(10 * EUR_RATE, 2)}
+
+
+async def test_screenshot_item_is_not_a_product(db_session):
+    from tests.conftest import make_receipt
+    await make_receipt(db_session, source="screenshot", date=JUNE, total=10.0, total_pln=10.0,
+                       items=[{"name": "@manual_expense", "total_price": 10.0, "category": "cafe"}])
+    assert await crud.get_products_stats(db_session, 1, "all") == []
+    assert await crud.get_items_for_export(db_session, 1, None, None) == []
+    assert await crud.get_monthly_spending_by_category(db_session, 1, "2026-06") == {"cafe": 10.0}
+
+
+async def test_migration_012_backfills_screenshot_items_and_reverts():
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+        await conn.execute(text(
+            "INSERT INTO receipts (id, user_id, currency, total, total_pln, source, category) VALUES "
+            "(1, 1, 'EUR', 10, 43, 'screenshot', 'cafe'),"   # gets an item
+            "(2, 1, 'PLN', 25, 25, 'screenshot', NULL),"     # gets an 'other' item
+            "(3, 1, 'PLN', 30, 30, NULL, 'groceries')"       # photo receipt without items: untouched
+        ))
+        await _run(conn, "upgrade")
+        rows = (await conn.execute(text(
+            "SELECT receipt_id, name, quantity, unit_price, total_price, category FROM items ORDER BY receipt_id"
+        ))).all()
+        assert [(r[0], r[1], float(r[2]), float(r[3]), float(r[4]), r[5]) for r in rows] == [
+            (1, "@manual_expense", 1.0, 10.0, 10.0, "cafe"),
+            (2, "@manual_expense", 1.0, 25.0, 25.0, "other"),
+        ]
+        await _run(conn, "upgrade")  # idempotent: receipts that have items are skipped
+        assert (await conn.execute(text("SELECT count(*) FROM items"))).scalar() == 2
+
+        await _run(conn, "downgrade")
+        assert (await conn.execute(text("SELECT count(*) FROM items"))).scalar() == 0
+    await engine.dispose()

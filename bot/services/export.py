@@ -54,6 +54,8 @@ async def build_excel(session: AsyncSession, user_id: int) -> io.BytesIO:
                         _("Total PLN"), _("Category")])
 
     for r in receipts:
+        if r.source == "screenshot":  # one whole-transaction item, not receipt lines
+            continue
         date_str = r.date.strftime("%d.%m.%Y") if r.date else ""
         store_str = display_name(r.store) or ""
         for item in r.items:

@@ -1,4 +1,4 @@
-"""store every item price in its receipt's currency (data only)
+"""item prices in the receipt's currency; items for bank screenshots (data only)
 
 Revision ID: 012_item_currency
 Revises: 011_users_language
@@ -12,7 +12,14 @@ the receipt kept the foreign currency, so a PLN conversion would apply the
 rate twice. Rewrite those items to the native amount.
 
 Only single-item Revolut receipts whose item still equals total_pln are
-touched; anything else is left as is. No schema change.
+touched; anything else is left as is.
+
+Bank-transaction screenshots (source = 'screenshot') were saved without
+items, so they never showed up in category stats or budgets. Give each one
+a single item for the whole transaction (native amount, the receipt's
+category), as /add does and as new screenshots now get.
+
+No schema change.
 """
 from typing import Sequence, Union
 
@@ -42,9 +49,26 @@ def _rewrite_revolut_items(from_col: str, to_col: str) -> None:
     """)
 
 
+_SCREENSHOT_ITEM_NAME = "@manual_expense"  # bot.markers.MANUAL_EXPENSE
+
+
 def upgrade() -> None:
     _rewrite_revolut_items(from_col="total_pln", to_col="total")
+    op.execute(f"""
+        INSERT INTO items (receipt_id, name, quantity, unit_price, total_price, category)
+        SELECT r.id, '{_SCREENSHOT_ITEM_NAME}', 1, r.total, r.total, coalesce(r.category, 'other')
+        FROM receipts r
+        WHERE r.source = 'screenshot'
+          AND NOT EXISTS (SELECT 1 FROM items i WHERE i.receipt_id = r.id)
+    """)
 
 
 def downgrade() -> None:
+    # Screenshots go back to having no items (the old convention), including
+    # ones saved by the new code.
+    op.execute(f"""
+        DELETE FROM items
+        WHERE name = '{_SCREENSHOT_ITEM_NAME}'
+          AND receipt_id IN (SELECT id FROM receipts WHERE source = 'screenshot')
+    """)
     _rewrite_revolut_items(from_col="total", to_col="total_pln")

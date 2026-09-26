@@ -35,6 +35,13 @@ def _item_pln_col():
     )
 
 
+def _has_receipt_lines():
+    """Receipts whose items are real receipt lines (photo/PDF), for product
+    stats and item export. Bank screenshots also carry a photo, but their one
+    item is the whole transaction, not a product."""
+    return Receipt.photo_file_id.isnot(None) & (func.coalesce(Receipt.source, "") != "screenshot")
+
+
 def _store_key():
     """Receipt.store with legacy Russian bot-generated names mapped to their
     language-neutral markers, so old and new rows group together."""
@@ -461,7 +468,7 @@ async def get_products_stats(
     date_to: date | None = None,
 ) -> list[dict[str, Any]]:
     since = _get_since(period_key)
-    conditions = [Receipt.user_id == user_id, Receipt.photo_file_id.isnot(None)]
+    conditions = [Receipt.user_id == user_id, _has_receipt_lines()]
     if since:
         conditions.append(Receipt.date >= since)
     # Explicit range (used by /wrapped for year scoping) overrides period_key.
@@ -499,7 +506,7 @@ async def get_products_stats(
 
 async def get_product_detail(session: AsyncSession, user_id: int, normalized_name: str, period_key: str) -> dict[str, Any]:
     since = _get_since(period_key)
-    conditions = [Receipt.user_id == user_id, Receipt.photo_file_id.isnot(None), _norm_col() == normalized_name]
+    conditions = [Receipt.user_id == user_id, _has_receipt_lines(), _norm_col() == normalized_name]
     if since:
         conditions.append(Receipt.date >= since)
 
@@ -561,7 +568,7 @@ async def get_all_normalized_names(session: AsyncSession, user_id: int) -> list[
     stmt = (
         select(func.distinct(_norm_col()))
         .join(Receipt, Item.receipt_id == Receipt.id)
-        .where(Receipt.user_id == user_id, Receipt.photo_file_id.isnot(None))
+        .where(Receipt.user_id == user_id, _has_receipt_lines())
     )
     result = await session.execute(stmt)
     return [row[0] for row in result if row[0]]
@@ -618,7 +625,7 @@ async def get_items_for_export(
     date_from: date | None,
     date_to: date | None,
 ) -> list[tuple]:
-    conditions = [Receipt.user_id == user_id, Receipt.photo_file_id.isnot(None)]
+    conditions = [Receipt.user_id == user_id, _has_receipt_lines()]
     if date_from:
         conditions.append(Receipt.date >= date_from)
     if date_to:
@@ -852,7 +859,7 @@ async def get_recent_receipts(session: AsyncSession, user_id: int, limit: int) -
 
 async def get_store_products(session: AsyncSession, user_id: int, store: str, period_key: str) -> list[dict[str, Any]]:
     since = _get_since(period_key)
-    conditions = [Receipt.user_id == user_id, _store_key() == store, Receipt.photo_file_id.isnot(None)]
+    conditions = [Receipt.user_id == user_id, _store_key() == store, _has_receipt_lines()]
     if since:
         conditions.append(Receipt.date >= since)
 

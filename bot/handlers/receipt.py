@@ -42,6 +42,7 @@ from bot.utils.formatters import (
     format_receipt_amount,
 )
 from bot.keyboards.inline import picker_label
+from bot import markers
 from bot.markers import display_name
 
 logger = logging.getLogger(__name__)
@@ -151,7 +152,15 @@ async def handle_receipt_photo(message: Message, bot: Bot, session: AsyncSession
                 "date": bank_tx["date"],
                 "currency": bank_currency,
                 "total": bank_amount,
-                "items": [],
+                # One item for the whole transaction, as /add does, so it
+                # counts in category stats and budgets.
+                "items": [{
+                    "name": markers.MANUAL_EXPENSE,
+                    "quantity": 1,
+                    "unit_price": bank_amount,
+                    "total_price": bank_amount,
+                    "category": cat_enum.value,
+                }],
             },
             photo_file_id=photo.file_id,
             total_pln=bank_total_pln,
