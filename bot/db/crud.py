@@ -37,7 +37,7 @@ def _item_pln_col():
 
 def _not_income():
     """Everything except income: salary or refunds are not purchases, so they
-    stay out of item / product statistics."""
+    stay out of item / product / category statistics and budgets."""
     return func.coalesce(Receipt.tx_type, "purchase") != "income"
 
 
@@ -154,7 +154,7 @@ async def get_spending_by_category(session: AsyncSession, user_id: int, days: in
             func.sum(_item_pln_col()).label("total_pln"),
         )
         .join(Receipt, Item.receipt_id == Receipt.id)
-        .where(Receipt.user_id == user_id, Receipt.date >= since, _personal_item_filter())
+        .where(Receipt.user_id == user_id, Receipt.date >= since, _personal_item_filter(), _not_income())
         .group_by(Item.category)
         .order_by(func.sum(_item_pln_col()).desc())
     )
@@ -378,7 +378,7 @@ async def get_monthly_spending_by_category(session: AsyncSession, user_id: int, 
             func.sum(_item_pln_col()).label("total_pln"),
         )
         .join(Receipt, Item.receipt_id == Receipt.id)
-        .where(Receipt.user_id == user_id, Receipt.date >= start, Receipt.date <= end, _personal_item_filter())
+        .where(Receipt.user_id == user_id, Receipt.date >= start, Receipt.date <= end, _personal_item_filter(), _not_income())
         .group_by(Item.category)
     )
     result = await session.execute(stmt)
@@ -683,7 +683,7 @@ async def get_spending_by_category_range(
             func.sum(_item_pln_col()).label("total_pln"),
         )
         .join(Receipt, Item.receipt_id == Receipt.id)
-        .where(Receipt.user_id == user_id, Receipt.date >= date_from, Receipt.date <= date_to, _personal_item_filter())
+        .where(Receipt.user_id == user_id, Receipt.date >= date_from, Receipt.date <= date_to, _personal_item_filter(), _not_income())
         .group_by(Item.category)
         .order_by(func.sum(_item_pln_col()).desc())
     )
