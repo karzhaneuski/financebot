@@ -6,7 +6,7 @@ instead and it is translated at display time. Old rows are left untouched: their
 as aliases of the matching marker, both for display and for grouping in SQL,
 so old and new rows aggregate together.
 """
-from sqlalchemy import case
+from sqlalchemy import case, literal
 
 from bot.i18n import __
 
@@ -58,5 +58,15 @@ def display_name(value: str | None) -> str | None:
 
 
 def canonical_sql(column):
-    """SQL expression mapping legacy values to markers, for GROUP BY / filters."""
-    return case(LEGACY_ALIASES, value=column, else_=column)
+    """SQL expression mapping legacy values to markers, for GROUP BY / filters.
+
+    The values are rendered inline (literal_execute), not as bind parameters:
+    PostgreSQL only accepts `SELECT <expr> ... GROUP BY <expr>` when both are
+    textually identical, and separate parameters ($1 vs $7) would make them
+    differ ("must appear in the GROUP BY clause").
+    """
+    return case(
+        *[(column == literal(old, literal_execute=True), literal(new, literal_execute=True))
+          for old, new in LEGACY_ALIASES.items()],
+        else_=column,
+    )
