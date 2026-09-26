@@ -54,10 +54,18 @@ def ru_locale():
         yield
 
 
+# Optional: TEST_DATABASE_URL=postgresql+asyncpg://... runs every db_session
+# test against that database instead (schema dropped and recreated per test —
+# use a throwaway database). SQLite accepts some SQL that PostgreSQL rejects.
+TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL")
+
+
 @pytest_asyncio.fixture
 async def db_session():
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    engine = create_async_engine(TEST_DATABASE_URL or "sqlite+aiosqlite:///:memory:")
     async with engine.begin() as conn:
+        if TEST_DATABASE_URL:
+            await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
     factory = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     async with factory() as session:
