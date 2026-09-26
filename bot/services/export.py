@@ -1,79 +1,72 @@
+"""Excel (.xlsx) export: the same rows as the CSV export (bot/handlers/export.py),
+as real dates and numbers with localized headers and category names."""
 import io
 
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
-from openpyxl.utils import get_column_letter
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from bot.db import crud
 from bot.i18n import _
 from bot.markers import display_name
 from bot.utils.formatters import format_category
 
 _HEADER_FILL = PatternFill(start_color="AEC6CF", end_color="AEC6CF", fill_type="solid")
 _HEADER_FONT = Font(bold=True)
+_DATE_FORMAT = "DD.MM.YYYY"
+_MONEY_FORMAT = "#,##0.00"
 
 
-def _apply_header(ws, headers: list[str]) -> None:
+def _add_sheet(wb: Workbook, title: str, headers: list[str], rows: list[list],
+               date_cols: set[int], money_cols: set[int]) -> None:
+    ws = wb.create_sheet(title)
     ws.append(headers)
     for cell in ws[1]:
         cell.fill = _HEADER_FILL
         cell.font = _HEADER_FONT
-
-
-def _autowidth(ws) -> None:
+    for row in rows:
+        ws.append(row)
+        for idx in date_cols:
+            ws.cell(ws.max_row, idx + 1).number_format = _DATE_FORMAT
+        for idx in money_cols:
+            ws.cell(ws.max_row, idx + 1).number_format = _MONEY_FORMAT
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = ws.dimensions
     for col_cells in ws.columns:
-        max_len = max((len(str(cell.value or "")) for cell in col_cells), default=10)
-        ws.column_dimensions[col_cells[0].column_letter].width = max_len + 3
+        longest = max((len(str(cell.value)) for cell in col_cells if cell.value is not None), default=8)
+        ws.column_dimensions[col_cells[0].column_letter].width = min(max(longest, 10) + 2, 45)
 
 
-async def build_excel(session: AsyncSession, user_id: int) -> io.BytesIO:
-    receipts = await crud.get_receipts(session, user_id, days=90)
+def _receipt_category(r) -> str:
+    key = r.category.value if r.category else (r.items[0].category.value if r.items else "other")
+    return format_category(key)
 
+
+def build_excel(receipts: list | None = None, item_rows: list | None = None) -> bytes:
+    """Workbook with a "Transactions" sheet (receipts from
+    crud.get_transactions_for_export) and/or an "Items" sheet (rows from
+    crud.get_items_for_export); a sheet is left out when its data is None."""
     wb = Workbook()
+    wb.remove(wb.active)
 
-    # --- Sheet 1: Receipts ---
-    ws1 = wb.active
-    ws1.title = _("Receipts")
-    _apply_header(ws1, [_("Date"), _("Store"), _("Total"), _("Currency"), _("Total PLN")])
-
-    for r in receipts:
-        ws1.append([
-            r.date.strftime("%d.%m.%Y") if r.date else "",
-            display_name(r.store) or "",
-            float(r.total),
-            r.currency,
-            float(r.total_pln),
-        ])
-
-    _autowidth(ws1)
-
-    # --- Sheet 2: Items ---
-    ws2 = wb.create_sheet(_("Items"))
-    _apply_header(ws2, [_("Date"), _("Store"), _("Item"), _("Qty"), _("Price"), _("Total"), _("Currency"),
-                        _("Total PLN"), _("Category")])
-
-    for r in receipts:
-        if r.source == "screenshot":  # one whole-transaction item, not receipt lines
-            continue
-        date_str = r.date.strftime("%d.%m.%Y") if r.date else ""
-        store_str = display_name(r.store) or ""
-        for item in r.items:
-            ws2.append([
-                date_str,
-                store_str,
-                display_name(item.name),
-                float(item.quantity),
-                float(item.unit_price) if item.unit_price is not None else "",
-                float(item.total_price),
-                r.currency,
-                round(r.to_pln(item.total_price), 2),
-                format_category(item.category.value),
-            ])
-
-    _autowidth(ws2)
+    if receipts is not None:
+        _add_sheet(
+            wb, _("Transactions"),
+            [_("Date"), _("Store"), _("Total"), _("Currency"), _("Total PLN"), _("Category")],
+            [[r.date, display_name(r.store) or "", float(r.total), r.currency or "PLN",
+              float(r.total_pln), _receipt_category(r)] for r in receipts],
+            date_cols={0}, money_cols={2, 4},
+        )
+    if item_rows is not None:
+        _add_sheet(
+            wb, _("Items"),
+            [_("Date"), _("Store"), _("Item"), _("Qty"), _("Price"), _("Total"), _("Currency"),
+             _("Total PLN"), _("Category")],
+            [[row.date, display_name(row.store) or "", display_name(row.name), float(row.quantity),
+              float(row.unit_price) if row.unit_price is not None else None, float(row.total_price),
+              row.currency, round(float(row.total_pln), 2), format_category(row.category.value)]
+             for row in item_rows],
+            date_cols={0}, money_cols={4, 5, 7},
+        )
 
     buf = io.BytesIO()
     wb.save(buf)
-    buf.seek(0)
-    return buf
+    return buf.getvalue()

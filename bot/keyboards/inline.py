@@ -237,31 +237,46 @@ def revolut_save_keyboard() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def export_type_keyboard() -> InlineKeyboardMarkup:
+def export_format_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text=_("📊 Transactions"), callback_data="export_type:transactions"),
-        InlineKeyboardButton(text=_("🧾 Receipt items"), callback_data="export_type:items"),
-    )
-    builder.row(
-        InlineKeyboardButton(text=_("📦 Everything"), callback_data="export_type:all"),
+        InlineKeyboardButton(text=_("📄 CSV"), callback_data="export_fmt:csv"),
+        InlineKeyboardButton(text=_("📊 Excel (.xlsx)"), callback_data="export_fmt:xlsx"),
     )
     return builder.as_markup()
 
 
-def export_period_keyboard(export_type: str) -> InlineKeyboardMarkup:
+# The file format rides at the end of the callback data, so buttons sent
+# before formats existed ("export_type:<type>", "export_period:<type>:<period>")
+# still work and mean CSV.
+def export_type_keyboard(fmt: str = "csv") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text=_("Today"), callback_data=f"export_period:{export_type}:today"),
-        InlineKeyboardButton(text=_("This week"), callback_data=f"export_period:{export_type}:week"),
+        InlineKeyboardButton(text=_("📊 Transactions"), callback_data=f"export_type:transactions:{fmt}"),
+        InlineKeyboardButton(text=_("🧾 Receipt items"), callback_data=f"export_type:items:{fmt}"),
     )
     builder.row(
-        InlineKeyboardButton(text=_("This month"), callback_data=f"export_period:{export_type}:month"),
-        InlineKeyboardButton(text=_("This year"), callback_data=f"export_period:{export_type}:year"),
+        InlineKeyboardButton(text=_("📦 Everything"), callback_data=f"export_type:all:{fmt}"),
+    )
+    return builder.as_markup()
+
+
+def export_period_keyboard(export_type: str, fmt: str = "csv") -> InlineKeyboardMarkup:
+    def data(period: str) -> str:
+        return f"export_period:{export_type}:{period}:{fmt}"
+
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(text=_("Today"), callback_data=data("today")),
+        InlineKeyboardButton(text=_("This week"), callback_data=data("week")),
     )
     builder.row(
-        InlineKeyboardButton(text=_("All time"), callback_data=f"export_period:{export_type}:all"),
-        InlineKeyboardButton(text=_("Custom dates"), callback_data=f"export_period:{export_type}:custom"),
+        InlineKeyboardButton(text=_("This month"), callback_data=data("month")),
+        InlineKeyboardButton(text=_("This year"), callback_data=data("year")),
+    )
+    builder.row(
+        InlineKeyboardButton(text=_("All time"), callback_data=data("all")),
+        InlineKeyboardButton(text=_("Custom dates"), callback_data=data("custom")),
     )
     return builder.as_markup()
 

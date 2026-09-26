@@ -13,6 +13,7 @@ and review the JSON diff before committing it.
 from __future__ import annotations
 
 import datetime as dt
+import io
 import json
 import os
 from pathlib import Path
@@ -300,16 +301,23 @@ async def sc_stats_empty(c):
 
 async def sc_export(c):
     await c.msg("/export")
-    await c.cb("export_type:transactions")
-    await c.cb("export_period:transactions:month")
-    await c.cb("export_period:items:all")
-    await c.cb("export_period:all:year")
-    await c.cb("export_period:all:custom")
+    await c.cb("export_fmt:csv")
+    await c.cb("export_type:transactions:csv")
+    await c.cb("export_period:transactions:month:csv")
+    await c.cb("export_period:items:all:csv")
+    await c.cb("export_period:all:year:csv")
+    await c.cb("export_fmt:xlsx")
+    await c.cb("export_type:all:xlsx")
+    await c.cb("export_period:all:year:xlsx")
+    await c.cb("export_period:items:custom:xlsx")
     await c.msg("bad")
     await c.msg("01.06.2026-20.06.2026")
+    # Buttons sent before formats existed still work and export CSV.
+    await c.cb("export_type:transactions")
+    await c.cb("export_period:transactions:month")
     await c.cb("export_done:again")
     await c.cb("export_done:menu")
-    await c.cb("export_period:transactions:today", user_id=EMPTY)
+    await c.cb("export_period:transactions:today:csv", user_id=EMPTY)
 
 
 async def sc_reports_settings(c):
@@ -447,9 +455,16 @@ async def sc_budget_services(c):
 async def sc_excel(c):
     from openpyxl import load_workbook
 
+    from bot.db import crud
     from bot.services.export import build_excel
-    wb = load_workbook(await build_excel(c.session, U))
-    c.ret({ws.title: [[cell.value for cell in row] for row in ws.iter_rows(max_row=4)]
+    receipts = await crud.get_transactions_for_export(c.session, U, None, None)
+    items = await crud.get_items_for_export(c.session, U, None, None)
+    wb = load_workbook(io.BytesIO(build_excel(receipts, items)))
+
+    def cell(value):
+        return value.date().isoformat() if isinstance(value, dt.datetime) else value
+
+    c.ret({ws.title: [[cell(v.value) for v in row] for row in ws.iter_rows(max_row=4)]
            for ws in wb.worksheets})
 
 
@@ -485,6 +500,7 @@ async def sc_keyboards(c):
         "categories": kb.categories_keyboard(),
         "erste_save": kb.erste_save_keyboard(),
         "revolut_save": kb.revolut_save_keyboard(),
+        "export_format": kb.export_format_keyboard(),
         "export_type": kb.export_type_keyboard(),
         "export_period": kb.export_period_keyboard("all"),
         "export_done": kb.export_done_keyboard(),

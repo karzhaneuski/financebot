@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: FinanceBot VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-26 00:36+0300\n"
+"POT-Creation-Date: 2026-09-26 19:27+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -383,9 +383,6 @@ msgstr "Цена"
 msgid "Qty"
 msgstr "Кол-во"
 
-msgid "Receipts"
-msgstr "Чеки"
-
 msgid "Recurring subscriptions"
 msgstr "Регулярные подписки"
 
@@ -490,6 +487,9 @@ msgstr "Всего потрачено: *{amount} PLN*"
 #, python-brace-format
 msgid "Total: {transactions}, sum {amount} PLN"
 msgstr "Всего: {transactions}, сумма {amount} PLN"
+
+msgid "Transactions"
+msgstr "Транзакции"
 
 msgid "Transfer"
 msgstr "Перевод"
@@ -655,11 +655,11 @@ msgstr "{year} — спасибо, что считал с FinanceBot"
 msgid "⏳ Building statistics..."
 msgstr "⏳ Формирую статистику..."
 
-msgid "⏳ Building the CSV..."
-msgstr "⏳ Формирую CSV..."
-
 msgid "⏳ Building the comparison..."
 msgstr "⏳ Формирую сравнение..."
+
+msgid "⏳ Building the file..."
+msgstr "⏳ Формирую файл..."
 
 msgid "⏳ Converting the PDF to an image..."
 msgstr "⏳ Конвертирую PDF в изображение..."
@@ -1131,6 +1131,9 @@ msgstr "💸 Итого: *{amount} PLN*"
 msgid "📂 *By category:*"
 msgstr "📂 *По категориям:*"
 
+msgid "📄 CSV"
+msgstr "📄 CSV"
+
 #, python-brace-format
 msgid "📅 *Daily report — {date}*"
 msgstr "📅 *Ежедневный отчёт — {date}*"
@@ -1184,6 +1187,9 @@ msgstr "📊 *Еженедельный отчёт — {start} – {end}*"
 
 msgid "📊 By category"
 msgstr "📊 По категориям"
+
+msgid "📊 Excel (.xlsx)"
+msgstr "📊 Excel (.xlsx)"
 
 msgid "📊 Export more"
 msgstr "📊 Экспортировать ещё"
@@ -1266,6 +1272,15 @@ msgstr "📋 Показать все бюджеты"
 
 msgid "📋 Show budgets"
 msgstr "📋 Показать бюджеты"
+
+msgid ""
+"📤 *Data export*\n"
+"\n"
+"Choose the file format:"
+msgstr ""
+"📤 *Экспорт данных*\n"
+"\n"
+"Выбери формат файла:"
 
 msgid ""
 "📤 *Data export*\n"

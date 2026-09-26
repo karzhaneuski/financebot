@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-26 00:36+0300\n"
+"POT-Creation-Date: 2026-09-26 19:27+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -375,9 +375,6 @@ msgstr ""
 msgid "Qty"
 msgstr ""
 
-msgid "Receipts"
-msgstr ""
-
 msgid "Recurring subscriptions"
 msgstr ""
 
@@ -481,6 +478,9 @@ msgstr ""
 
 #, python-brace-format
 msgid "Total: {transactions}, sum {amount} PLN"
+msgstr ""
+
+msgid "Transactions"
 msgstr ""
 
 msgid "Transfer"
@@ -637,10 +637,10 @@ msgstr ""
 msgid "⏳ Building statistics..."
 msgstr ""
 
-msgid "⏳ Building the CSV..."
+msgid "⏳ Building the comparison..."
 msgstr ""
 
-msgid "⏳ Building the comparison..."
+msgid "⏳ Building the file..."
 msgstr ""
 
 msgid "⏳ Converting the PDF to an image..."
@@ -1063,6 +1063,9 @@ msgstr ""
 msgid "📂 *By category:*"
 msgstr ""
 
+msgid "📄 CSV"
+msgstr ""
+
 #, python-brace-format
 msgid "📅 *Daily report — {date}*"
 msgstr ""
@@ -1113,6 +1116,9 @@ msgid "📊 *Weekly report — {start} – {end}*"
 msgstr ""
 
 msgid "📊 By category"
+msgstr ""
+
+msgid "📊 Excel (.xlsx)"
 msgstr ""
 
 msgid "📊 Export more"
@@ -1176,6 +1182,12 @@ msgid "📋 Show all budgets"
 msgstr ""
 
 msgid "📋 Show budgets"
+msgstr ""
+
+msgid ""
+"📤 *Data export*\n"
+"\n"
+"Choose the file format:"
 msgstr ""
 
 msgid ""
